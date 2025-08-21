@@ -1,6 +1,6 @@
 import type { OptimizationBlock, OptimizationContext } from "..";
 import type { DFBlock } from "../../diamondfire/types";
-import { actionDump } from "@actiondump";
+import { actionDump } from "../../actiondump";
 import { OptimizationPass } from ".";
 
 export class TrackVariables extends OptimizationPass {

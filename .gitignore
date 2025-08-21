@@ -7,7 +7,6 @@ dist
 *.tgz
 
 # project specific files
-actiondump.json
 debug-blocks-optimized.json
 debug-blocks-unoptimized.json
 

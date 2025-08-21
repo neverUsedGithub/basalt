@@ -1,6 +1,6 @@
 import type { DFBlock, DFBlockTarget, DFCodeBlock, DFItem, DFParameter, DFTarget, DFVar } from "../diamondfire/types";
 import type { BaseNode, ExpressionNode, KeywordArgumentNode, ParserNode, ProgramNode } from "../parser/nodes";
-import type { OptionsItem } from "../../actiondump";
+import type { OptionsItem } from "../actiondump";
 import type { SourceFile } from "../shared/source";
 import { type TypeChecker, type VariableScope } from "../typechecker";
 import {

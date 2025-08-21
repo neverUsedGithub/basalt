@@ -1,6 +1,6 @@
 import logger from "@justcoding123/logger";
 import { basename, isAbsolute, join } from "node:path";
-import { CodeGen } from "../codegen.ts";
+import { CodeGen } from "../codegen";
 import { Lexer } from "../lexer";
 import { Optimizer } from "../optimizer";
 import { Parser } from "../parser";
@@ -54,8 +54,10 @@ async function cli() {
     const optimizer = new Optimizer(blocks);
     const newBlocks = optimizer.optimize();
 
-    await Bun.write("debug-blocks-unoptimized.json", JSON.stringify(blocks, null, 2));
-    await Bun.write("debug-blocks-optimized.json", JSON.stringify(newBlocks, null, 2));
+    if (Bun.argv.includes("-d")) {
+      await Bun.write("debug-blocks-unoptimized.json", JSON.stringify(blocks, null, 2));
+      await Bun.write("debug-blocks-optimized.json", JSON.stringify(newBlocks, null, 2));
+    }
 
     rows = splitBlocks(newBlocks);
   } catch (e) {

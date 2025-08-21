@@ -1,5 +1,5 @@
 import type { CallExpressionNode, ExpressionNode, KeywordArgumentNode, ParserNode } from "../../parser/nodes";
-import type { TagsItem } from "../../../actiondump";
+import type { TagsItem } from "../../actiondump";
 import type { TypeCheckerLiteral } from "./literal";
 import type { TypeCheckerType } from "./type";
 import type { BinaryOperators } from "../../lexer";

@@ -1,12 +1,16 @@
 import { json2ts } from "json-ts";
 
-const content = await Bun.file("./actiondump.json").text();
+const content = await Bun.file("./src/actiondump/actiondump.json").text();
 let generated = json2ts(content, {
   rootName: "ActionDump",
   prefix: "",
 });
 
 generated = generated.replace(/^interface/gm, "export interface");
-generated += `\n\nconst rawDump = await Bun.file("actiondump.json").json();\nexport const actionDump = rawDump as ActionDump;`;
+generated += `
+import { join } from "path";
+import { readFileSync } from "fs";
+const rawDump = JSON.parse(readFileSync(join(import.meta.dir, "actiondump.json"), { encoding: "utf-8" }));
+export const actionDump = rawDump as ActionDump;`;
 
-await Bun.write(Bun.file("./actiondump.ts"), generated);
+await Bun.write(Bun.file("./src/actiondump/index.ts"), generated);

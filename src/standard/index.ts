@@ -1,5 +1,5 @@
 import type { TypeCheckerCallableSignature } from "../typechecker/types/callable";
-import { actionDump, type ActionDump, type ActionsItem, type ArgumentsItem } from "@actiondump";
+import { actionDump, type ActionDump, type ActionsItem, type ArgumentsItem } from "../actiondump";
 import {
   TypeCheckerAction,
   TypeCheckerAny,

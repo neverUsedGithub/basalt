@@ -156,6 +156,7 @@ export interface PurchasablesItem {
     oneTimePurchase?: boolean;
 }
 
-
-const rawDump = await Bun.file("actiondump.json").json();
+import { join } from "path";
+import { readFileSync } from "fs";
+const rawDump = JSON.parse(readFileSync(join(import.meta.dir, "actiondump.json"), { encoding: "utf-8" }));
 export const actionDump = rawDump as ActionDump;
