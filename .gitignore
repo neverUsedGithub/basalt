@@ -12,6 +12,7 @@ debug-blocks-optimized.json
 debug-blocks-unoptimized.json
 
 # lock files
+bun.lock
 bun.lockb
 pnpm-lock.yaml
 package-lock.json
