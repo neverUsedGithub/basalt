@@ -158,6 +158,6 @@ export interface PurchasablesItem {
 
 import { join } from "path";
 import { readFileSync } from "fs";
-const parentDir = typeof import.meta === "undefined" ? __dirname : import.meta.dir;
+const parentDir = require.main === module ? __dirname : import.meta.dir;
 const rawDump = JSON.parse(readFileSync(join(parentDir, "actiondump.json"), { encoding: "utf-8" }));
 export const actionDump = rawDump as ActionDump;
