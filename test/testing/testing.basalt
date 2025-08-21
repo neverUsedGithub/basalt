@@ -1,0 +1,24 @@
+
+event player_event::command {
+  let @line sender = game_values::name;
+
+  for @line player in game_value::player_names {
+    selection {
+      select_object::players_by_name(@line player);
+      player_action::send_message("Hello from", sender);
+      select_object::reset();
+    }
+  }
+
+  repeat on_path() {}
+}
+
+event player_event::join {
+  forever {
+    while player is_sneaking() {
+      player_action::action_bar("sneaker");
+    }
+    
+    control::wait(1);
+  }
+}

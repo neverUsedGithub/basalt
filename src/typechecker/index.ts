@@ -1,0 +1,493 @@
+import type { BinaryOperators } from "../lexer";
+import type { ParserNode, ProgramNode } from "../parser/nodes";
+import type { SourceFile } from "../shared/source";
+import { Span } from "../shared/span";
+import * as std from "../standard";
+import {
+  type TypeCheckerType,
+  TypeCheckerAny,
+  TypeCheckerBoolean,
+  TypeCheckerCallable,
+  TypeCheckerDict,
+  TypeCheckerList,
+  TypeCheckerEvent,
+  TypeCheckerNamespace,
+  TypeCheckerNumber,
+  TypeCheckerReference,
+  TypeCheckerString,
+  TypeCheckerVoid,
+  TypeCheckerStyledText,
+} from "./types";
+
+export type VariableScope = "@global" | "@saved" | "@thread" | "@line";
+
+enum TypeCheckerScopeType {
+  GLOBAL,
+  BLOCK,
+  FUNCTION,
+}
+
+export class TypeCheckerScope {
+  private symbols: Record<VariableScope, Map<string, { type: TypeCheckerType; modifier: VariableScope }>> = {
+    "@global": new Map(),
+    "@thread": new Map(),
+    "@saved": new Map(),
+    "@line": new Map(),
+  };
+
+  constructor(
+    private type: TypeCheckerScopeType,
+    private parent: TypeCheckerScope | null,
+
+    public readonly span: Span,
+  ) {}
+
+  addSymbol(name: string, type: TypeCheckerType, scope: VariableScope): void {
+    if ((scope === "@global" || scope === "@saved" || scope === "@thread") && this.parent)
+      return this.parent.addSymbol(name, type, scope);
+
+    this.symbols[scope].set(name, { type, modifier: scope });
+  }
+
+  getSymbol(name: string, scope: VariableScope): TypeCheckerType | null {
+    if (this.symbols[scope].has(name)) return this.symbols[scope].get(name)!.type;
+    return this.parent ? this.parent.getSymbol(name, scope) : null;
+  }
+
+  findClosest(type: TypeCheckerScopeType): TypeCheckerScope | null {
+    if (this.type === type) return this;
+    return this.parent ? this.parent.findClosest(type) : null;
+  }
+}
+
+export class TypeCheckerFunctionScope extends TypeCheckerScope {
+  private returnType: TypeCheckerType | null = null;
+
+  setReturnType(type: TypeCheckerType): void {
+    this.returnType = type;
+  }
+
+  getReturnType(): TypeCheckerType {
+    return this.returnType ?? new TypeCheckerVoid();
+  }
+}
+
+export class TypeChecker {
+  private topScope: TypeCheckerScope;
+  private typeMap: Map<ParserNode, TypeCheckerType> = new Map();
+  private scopeMap: Map<ParserNode, TypeCheckerScope> = new Map();
+
+  constructor(
+    private source: SourceFile,
+    private ast: ProgramNode,
+  ) {
+    this.topScope = new TypeCheckerScope(TypeCheckerScopeType.GLOBAL, null, source.getSpan());
+    this.setBuiltins(std.builtins);
+  }
+
+  getType(node: ParserNode): TypeCheckerType | null {
+    return this.typeMap.get(node) ?? null;
+  }
+
+  getScope(node: ParserNode): TypeCheckerScope | null {
+    const scope = this.scopeMap.get(node);
+    if (scope) return scope;
+
+    for (const scope of this.scopeMap.values()) {
+      if (scope.span.contains(node.span.start)) {
+        return scope;
+      }
+    }
+
+    return null;
+  }
+
+  private expectType<T extends new (...args: any[]) => TypeCheckerType>(
+    type: TypeCheckerType,
+    expected: T,
+    message: string,
+    span: Span,
+  ): asserts type is InstanceType<T> {
+    if (!(type instanceof expected)) {
+      this.source.error({
+        type: "Type",
+        message: `${message}, but got ${(type as TypeCheckerType).asString()}`,
+        span,
+      });
+    }
+  }
+
+  private checkNode(node: ParserNode, scope: TypeCheckerScope): TypeCheckerType {
+    switch (node.kind) {
+      case "Program": {
+        for (const child of node.body) this.check(child, scope);
+
+        return new TypeCheckerVoid();
+      }
+
+      case "Event": {
+        const checked = this.check(node.event, scope);
+
+        this.expectType(checked, TypeCheckerEvent, "expected an event type", node.event.span);
+        this.check(node.body, scope);
+
+        return new TypeCheckerVoid();
+      }
+
+      case "Using": {
+        const namespace = this.topScope.getSymbol(node.namespace.value, "@global");
+
+        if (namespace === null) {
+          this.source.error({
+            type: "Type",
+            message: `namespace '${node.namespace.value}' hasn't been defined`,
+            span: node.namespace.span,
+          });
+        }
+
+        if (!(namespace instanceof TypeCheckerNamespace)) {
+          this.source.error({
+            type: "Type",
+            message: `'${namespace}' is not a namespace`,
+            span: node.namespace.span,
+          });
+        }
+
+        const value = namespace.getSymbol(node.name.value);
+
+        if (value === null) {
+          this.source.error({
+            type: "Type",
+            message: `namespace '${node.namespace.value}' has no member '${node.name.value}'`,
+            span: node.name.span,
+          });
+        }
+
+        this.topScope.addSymbol(node.name.value, value, "@global");
+
+        return new TypeCheckerVoid();
+      }
+
+      case "Block": {
+        const inner = new TypeCheckerScope(TypeCheckerScopeType.BLOCK, scope, node.span);
+        for (const child of node.body) this.check(child, inner);
+
+        return new TypeCheckerVoid();
+      }
+
+      case "NamespaceGetProperty": {
+        const namesp = this.check(node.namespace, scope);
+        this.expectType(namesp, TypeCheckerNamespace, "expected a namespace", node.namespace.span);
+
+        const propertyName = node.property.kind === "Identifier" ? node.property.name.value : node.property.value.value;
+        const value = namesp.getSymbol(propertyName);
+
+        if (value === null) {
+          this.source.error({
+            type: "Type",
+            message: `${namesp.asString()} has no member '${propertyName}'`,
+            span: node.property.span,
+          });
+        }
+
+        return value;
+      }
+
+      case "VariableNode": {
+        const data = scope.getSymbol(node.name.value, node.scope.value as VariableScope);
+
+        if (!data)
+          this.source.error({
+            type: "Type",
+            message: `couldn't resolve variable '${node.name.value}' with scope ${node.scope.value}`,
+            span: node.span,
+          });
+
+        return data;
+      }
+
+      case "Identifier": {
+        const data = scope.getSymbol(node.name.value, "@global");
+
+        if (!data)
+          this.source.error({
+            type: "Type",
+            message: `couldn't resolve global variable '${node.name.value}', maybe you forgot a variable scope?`,
+            span: node.name.span,
+          });
+
+        return data;
+      }
+
+      case "VariableDefinition": {
+        const valueType = node.type ? this.check(node.type, scope) : this.check(node.value!, scope);
+
+        if (valueType instanceof TypeCheckerVoid)
+          this.source.error({ type: "Type", message: `cannot assign void to variable`, span: node.span });
+
+        scope.addSymbol(node.name.name.value, valueType, node.name.scope.value as VariableScope);
+
+        return new TypeCheckerVoid();
+      }
+
+      case "String": {
+        return new TypeCheckerStyledText();
+      }
+
+      case "Boolean": {
+        return new TypeCheckerBoolean();
+      }
+
+      case "ReferenceExpression": {
+        const symbol = scope.getSymbol(node.name.name.value, node.name.scope.value as VariableScope);
+
+        if (symbol === null)
+          this.source.error({
+            type: "Type",
+            message: `variable '${node.name.name.value}' hasn't been defined`,
+            span: node.name.span,
+          });
+
+        const type = new TypeCheckerReference();
+        type.addGenericParameters([symbol]);
+
+        return type;
+      }
+
+      case "TypeName": {
+        const name = node.name.value;
+
+        switch (name) {
+          case "number":
+            return new TypeCheckerNumber();
+
+          case "string":
+            return new TypeCheckerString();
+
+          case "dict":
+            return new TypeCheckerDict();
+
+          case "list":
+            return new TypeCheckerList();
+
+          case "any":
+            return new TypeCheckerAny();
+
+          case "void":
+            return new TypeCheckerVoid();
+
+          case "text":
+            return new TypeCheckerStyledText();
+        }
+
+        this.source.error({
+          type: "Type",
+          message: `unimplemented typename '${name}'`,
+          span: node.name.span,
+        });
+      }
+
+      case "ParameterizedType": {
+        const type = this.check(node.name, scope);
+        const parameters: TypeCheckerType[] = [];
+
+        for (const param of node.parameters) parameters.push(this.check(param, scope));
+
+        const res = type.addGenericParameters(parameters);
+
+        if (!res.ok) {
+          this.source.error({
+            type: "Type",
+            message: res.message,
+            span: node.span,
+          });
+        }
+
+        return type;
+      }
+
+      case "Number": {
+        return new TypeCheckerNumber();
+      }
+
+      case "ExpressionStatement": {
+        return this.check(node.expression, scope);
+      }
+
+      case "CallExpression": {
+        const fn = this.check(node.expression, scope);
+        this.expectType(fn, TypeCheckerCallable, "expected a callable expression", node.expression.span);
+
+        const res = fn.canCall(node, (node) => this.check(node, scope));
+
+        if (!res.ok) {
+          this.source.error({
+            type: "Type",
+            message: res.error.error,
+            span: res.error.span,
+          });
+        }
+
+        return res.signature.return;
+      }
+
+      case "AssignmentExpression": {
+        const lhs = this.check(node.expression, scope);
+        const rhs = this.check(node.value, scope);
+
+        if (!lhs.equals(rhs)) {
+          this.source.error({
+            type: "Type",
+            message: `type '${rhs.asString()}' is not assignable to type '${lhs.asString()}'`,
+            span: node.span,
+          });
+        }
+
+        return lhs;
+      }
+
+      case "ReturnStatement": {
+        const fnScope = scope.findClosest(TypeCheckerScopeType.FUNCTION);
+
+        if (!fnScope || !(fnScope instanceof TypeCheckerFunctionScope))
+          this.source.error({ type: "Type", message: `cannot return from this scope`, span: node.span });
+
+        const returnType = fnScope.getReturnType();
+
+        if (!returnType.equals(this.check(node.value, scope))) {
+          this.source.error({
+            type: "Type",
+            message: `cannot return this type of expression`,
+            span: node.span,
+          });
+        }
+
+        return new TypeCheckerVoid();
+      }
+
+      case "IfActionStatement": {
+        const conditionTypes = std.conditions[`if_${node.category.value}`];
+        const conditionCallable = conditionTypes.get(node.action.value);
+
+        if (conditionCallable === undefined) {
+          this.source.error({
+            type: "Type",
+            message: `cannot find conditional action '${node.action.value}' in category ${node.action.value}`,
+            span: node.action.span,
+          });
+        }
+
+        const result = conditionCallable.canCall(node, (node) => this.check(node, scope));
+
+        if (!result.ok) {
+          this.source.error({
+            type: "Type",
+            message: result.error.error,
+            span: result.error.span,
+          });
+        }
+
+        this.check(node.block, scope);
+
+        return conditionCallable;
+      }
+
+      case "BinaryExpression": {
+        const lhs = this.check(node.lhs, scope);
+        const rhs = this.check(node.lhs, scope);
+
+        const result = lhs.execOperator(node.operator.value as BinaryOperators, rhs);
+
+        if (!result) {
+          this.source.error({
+            type: "Parser",
+            message: `unsupported operands for '${node.operator.value}': '${lhs.asString()}' and '${rhs.asString()}'`,
+            span: node.operator.span,
+          });
+        }
+
+        return result;
+      }
+
+      case "IfExpressionStatement": {
+        const expr = this.check(node.expression, scope);
+
+        if (!(expr instanceof TypeCheckerBoolean)) {
+          this.source.error({
+            type: "Type",
+            message: `expected a boolean value, got '${expr.asString()}'`,
+            span: node.expression.span,
+          });
+        }
+
+        return new TypeCheckerVoid();
+      }
+
+      case "FunctionDefinition": {
+        const inner = new TypeCheckerFunctionScope(TypeCheckerScopeType.FUNCTION, scope, node.body.span);
+        const returnType = this.check(node.returnType, inner);
+        const parameters: [string, TypeCheckerType][] = [];
+
+        inner.setReturnType(returnType);
+
+        for (const param of node.parameters) {
+          const pType = this.check(param.type, inner);
+
+          parameters.push([param.name.value, pType]);
+          inner.addSymbol(param.name.value, pType, "@line");
+        }
+
+        this.check(node.body, inner);
+
+        this.topScope.addSymbol(
+          node.name.value,
+          new TypeCheckerCallable(node.name.value, [
+            {
+              params: parameters,
+              keywordParams: [],
+              variadic: false,
+              return: returnType,
+            },
+          ]),
+          "@global",
+        );
+
+        return new TypeCheckerVoid();
+      }
+
+      case "TargetExpression": {
+        return this.check(node.expression, scope);
+      }
+
+      case "TargetStatement": {
+        this.check(node.statement, scope);
+        return new TypeCheckerVoid();
+      }
+
+      default: {
+        this.source.error({
+          type: "Type",
+          message: `unimplemented node '${node.kind}'`,
+          span: node.span,
+        });
+      }
+    }
+  }
+
+  private check(node: ParserNode, scope: TypeCheckerScope): TypeCheckerType {
+    const type = this.checkNode(node, scope);
+
+    this.scopeMap.set(node, scope);
+    this.typeMap.set(node, type);
+
+    return type;
+  }
+
+  setBuiltins(builtins: Record<string, TypeCheckerType>) {
+    for (const name in builtins) this.topScope.addSymbol(name, builtins[name], "@global");
+  }
+
+  checkProgram() {
+    this.check(this.ast, this.topScope);
+  }
+}

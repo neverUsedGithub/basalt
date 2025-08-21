@@ -1,0 +1,22 @@
+let @saved join_count = 0;
+
+fn string(value: any): string {
+  let @line temp: string;
+  
+  set_variable::string(ref @line temp, @line value);
+
+  return @line temp;
+}
+
+event player_event::join {
+  @saved join_count += 1;
+
+  let @line join_count_str = string(@saved join_count);
+
+  player_action::send_message(
+    "Join Count: ", @line join_count_str,
+
+    alignment_mode="centered",
+    text_value_merging="add_spaces"
+  );
+}

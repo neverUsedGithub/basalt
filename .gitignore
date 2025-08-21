@@ -1,0 +1,6 @@
+node_modules
+actiondump.json
+bun.lockb
+bun.lock
+debug-blocks-optimized.json
+debug-blocks-unoptimized.json
