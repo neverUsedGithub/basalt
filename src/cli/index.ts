@@ -41,7 +41,7 @@ async function cli() {
 
   try {
     const lexer = new Lexer(source);
-    const parser = new Parser(source, lexer);
+    const parser = new Parser(source, lexer, "strict", null);
     const ast = parser.parse();
 
     const checker = new TypeChecker(source, ast);

@@ -1,4 +1,4 @@
-fn test(test: string): void {}
+fn test(foo: string): void {}
 
 event player_event::death {
   let @line player_name = game_values::name;
@@ -10,12 +10,9 @@ event player_event::death {
     @line emoji = "😬";
   }
 
-  test == ;
-
   all_players {
     player_action::send_message(
       @line emoji, @line player_name, @line message, @line emoji,
-
       alignment_mode="centered"
     );
   }

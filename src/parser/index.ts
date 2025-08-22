@@ -65,7 +65,7 @@ export class Parser {
   constructor(
     private source: SourceFile,
     private lexer: Lexer,
-    private mode: "strict" | "tolerant" = "strict",
+    private mode: "strict" | "tolerant",
     onNode: null | ((node: ParserNode) => void),
   ) {
     this.current = lexer.next();
