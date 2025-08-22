@@ -124,12 +124,16 @@ export class Parser {
     while (this.is(TokenType.NEWLINE)) this.eat(TokenType.NEWLINE);
   }
 
+  private formatExpected(type: TokenType, value?: string): string {
+    const currentValue = this.current.type === TokenType.NEWLINE ? "newline" : `token '${this.current.value}'`;
+    return `unexpected ${currentValue} (${this.current.type}) expected ${value ? `'${value}' (${type})` : type}`;
+  }
+
   private eat<T extends TokenType>(type: T, value?: string): Token<T> {
     if (!this.is(type, value)) {
-      const currentValue = this.current.type === TokenType.NEWLINE ? "newline" : `token '${this.current.value}'`;
       this.error({
         type: "Parser",
-        message: `unexpected ${currentValue} (${this.current.type}) expected ${value ? `'${value}' (${type})` : type}`,
+        message: this.formatExpected(type, value),
         span: this.current.span,
       });
     }
@@ -593,6 +597,12 @@ export class Parser {
     const expr = this.pExpression();
 
     if (this.mode === "tolerant" && this.current.type === TokenType.NEWLINE) {
+      this.errors.push({
+        type: "Parser",
+        message: this.formatExpected(TokenType.SEMICOLON),
+        span: this.current.span,
+      });
+
       return this.make({
         kind: "ExpressionStatement",
         expression: expr,
