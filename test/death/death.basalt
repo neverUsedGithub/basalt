@@ -13,7 +13,7 @@ event player_event::join {
   let @line output: number;
   set_variable::absolute_value(ref @line output, @line output);
 
-  set_variable::absolute_value;
+  set_variable::join_string;
 
   all_players {
     player_action::send_message(

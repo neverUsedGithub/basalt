@@ -28,8 +28,13 @@ enum TypeCheckerScopeType {
   FUNCTION,
 }
 
+export type TypeCheckerScopeSymbols = Record<
+  VariableScope,
+  Map<string, { type: TypeCheckerType; scope: VariableScope }>
+>;
+
 export class TypeCheckerScope {
-  private symbols: Record<VariableScope, Map<string, { type: TypeCheckerType; modifier: VariableScope }>> = {
+  private symbols: TypeCheckerScopeSymbols = {
     "@global": new Map(),
     "@thread": new Map(),
     "@saved": new Map(),
@@ -47,12 +52,16 @@ export class TypeCheckerScope {
     if ((scope === "@global" || scope === "@saved" || scope === "@thread") && this.parent)
       return this.parent.addSymbol(name, type, scope);
 
-    this.symbols[scope].set(name, { type, modifier: scope });
+    this.symbols[scope].set(name, { type, scope });
   }
 
   getSymbol(name: string, scope: VariableScope): TypeCheckerType | null {
     if (this.symbols[scope].has(name)) return this.symbols[scope].get(name)!.type;
     return this.parent ? this.parent.getSymbol(name, scope) : null;
+  }
+
+  listSymbols(): TypeCheckerScopeSymbols {
+    return this.symbols;
   }
 
   findClosest(type: TypeCheckerScopeType): TypeCheckerScope | null {
