@@ -120,11 +120,16 @@ export class Parser {
     return true;
   }
 
+  private skipNewlines() {
+    while (this.is(TokenType.NEWLINE)) this.eat(TokenType.NEWLINE);
+  }
+
   private eat<T extends TokenType>(type: T, value?: string): Token<T> {
     if (!this.is(type, value)) {
+      const currentValue = this.current.type === TokenType.NEWLINE ? "newline" : `token '${this.current.value}'`;
       this.error({
         type: "Parser",
-        message: `unexpected token '${this.current.value}' (${this.current.type}) expected ${value ? `'${value}' (${type})` : type}`,
+        message: `unexpected ${currentValue} (${this.current.type}) expected ${value ? `'${value}' (${type})` : type}`,
         span: this.current.span,
       });
     }
@@ -295,8 +300,12 @@ export class Parser {
     const args: CallExpressionNode["arguments"] = [];
     const keywordArgs: KeywordArgumentNode[] = [];
 
+    this.skipNewlines();
+
     while (!this.is(TokenType.DELIMITER, ")")) {
       if (args.length > 0) this.eat(TokenType.COMMA);
+      this.skipNewlines();
+
       if (this.is(TokenType.IDENTIFIER) && this.isLookahead(TokenType.OPERATOR, "=")) {
         const name = this.eat(TokenType.IDENTIFIER);
         this.eat(TokenType.OPERATOR, "=");
@@ -313,6 +322,8 @@ export class Parser {
       } else {
         args.push(this.pExpression());
       }
+
+      this.skipNewlines();
     }
 
     return { args, keywordArgs };
@@ -580,6 +591,15 @@ export class Parser {
     if (this.is(TokenType.DELIMITER, "{")) return this.pBlock();
 
     const expr = this.pExpression();
+
+    if (this.mode === "tolerant" && this.current.type === TokenType.NEWLINE) {
+      return this.make({
+        kind: "ExpressionStatement",
+        expression: expr,
+        span: expr.span,
+      });
+    }
+
     this.eat(TokenType.SEMICOLON);
 
     return this.make({
@@ -594,7 +614,7 @@ export class Parser {
     const body: BlockNode["body"] = [];
 
     while (!this.is(TokenType.DELIMITER, "}")) {
-      while (this.is(TokenType.SEMICOLON)) this.advance();
+      while (this.is(TokenType.SEMICOLON) || this.is(TokenType.NEWLINE)) this.advance();
       if (this.is(TokenType.DELIMITER, "}")) break;
 
       body.push(this.pStatement());
@@ -651,7 +671,11 @@ export class Parser {
     const parameters: FunctionDefinitionNode["parameters"] = [];
 
     this.eat(TokenType.DELIMITER, "(");
+    this.skipNewlines();
     while (!this.is(TokenType.DELIMITER, ")")) {
+      this.skipNewlines();
+      if (this.is(TokenType.DELIMITER, ")")) break;
+
       if (parameters.length > 0) this.eat(TokenType.COMMA);
       const parameterName = this.eat(TokenType.IDENTIFIER);
       this.eat(TokenType.COLON);
@@ -671,6 +695,8 @@ export class Parser {
     this.eat(TokenType.COLON);
 
     const returnType = this.pTypeNode();
+
+    this.skipNewlines();
     const body = this.pBlock();
 
     return this.make({
@@ -688,7 +714,7 @@ export class Parser {
     const start = this.current.span.start;
 
     while (!this.is(TokenType.EOF)) {
-      while (this.is(TokenType.SEMICOLON)) this.advance();
+      while (this.is(TokenType.SEMICOLON) || this.is(TokenType.NEWLINE)) this.advance();
       if (this.is(TokenType.EOF)) break;
 
       if (this.is(TokenType.KEYWORD, "let")) body.push(this.pVariableDefinition());

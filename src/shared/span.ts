@@ -3,6 +3,10 @@ export class Location {
     public line: number,
     public col: number,
   ) {}
+
+  sub(lines: number, cols: number) {
+    return new Location(this.line - lines, this.col - cols);
+  }
 }
 
 export class Span {

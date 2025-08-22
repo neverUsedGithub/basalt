@@ -11,6 +11,7 @@ export enum TokenType {
   STRING = "STRING",
   TARGET = "TARGET",
   KEYWORD = "KEYWORD",
+  NEWLINE = "NEWLINE",
   OPERATOR = "OPERATOR",
   TYPENAME = "TYPENAME",
   DELIMITER = "DELIMITER",
@@ -65,7 +66,7 @@ export type TargetTokens = (typeof TARGETS)[number];
 
 const VAR_SCOPES: VariableScope[] = ["@global", "@line", "@saved", "@thread"];
 const TYPENAMES = ["void", "string", "number", "dict", "list", "any", "text"];
-const SKIP_CHARACTERS = ["\n", "\r", "\t", " "];
+const SKIP_CHARACTERS = ["\r", "\t", " "];
 
 interface TokenTree {
   [char: string]: TokenType | TokenTree;
@@ -164,6 +165,12 @@ export class Lexer {
 
     const start = this.location();
 
+    if (this.current === "\n") {
+      this.advance();
+      const previous = start.sub(0, 1);
+      return new Token(TokenType.NEWLINE, "\n", new Span(previous, previous));
+    }
+
     if (this.current in CONSTANT_TOKENS) {
       let curr = (CONSTANT_TOKENS as TokenTree)[this.current];
       let value = this.current;
@@ -178,7 +185,7 @@ export class Lexer {
       if ((typeof curr === "object" && "" in curr && typeof curr[""] !== "object") || typeof curr !== "object") {
         const tokenType: TokenType = typeof curr === "object" ? (curr[""] as TokenType) : curr;
 
-        for (let _ = 0; _ < value.length-1; _++) this.advance();
+        for (let _ = 0; _ < value.length - 1; _++) this.advance();
         const end = this.location();
         this.advance();
 
