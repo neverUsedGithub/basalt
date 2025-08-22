@@ -28,10 +28,9 @@ enum TypeCheckerScopeType {
   FUNCTION,
 }
 
-export type TypeCheckerScopeSymbols = Record<
-  VariableScope,
-  Map<string, { type: TypeCheckerType; scope: VariableScope }>
->;
+type ScopeSymbolMap = Map<string, { type: TypeCheckerType; scope: VariableScope }>;
+
+export type TypeCheckerScopeSymbols = Record<VariableScope, ScopeSymbolMap>;
 
 export class TypeCheckerScope {
   private symbols: TypeCheckerScopeSymbols = {
@@ -61,7 +60,21 @@ export class TypeCheckerScope {
   }
 
   listSymbols(): TypeCheckerScopeSymbols {
-    return this.symbols;
+    const selfSymbols: Record<string, ScopeSymbolMap> = {};
+    const parentSymbols = this.parent ? this.parent.listSymbols() : null;
+
+    for (const name in this.symbols) {
+      if (parentSymbols) {
+        selfSymbols[name] = new Map([
+          ...this.symbols[name as VariableScope].entries(),
+          ...parentSymbols![name as VariableScope].entries(),
+        ]);
+      } else {
+        selfSymbols[name] = new Map(this.symbols[name as VariableScope].entries());
+      }
+    }
+
+    return selfSymbols as TypeCheckerScopeSymbols;
   }
 
   findClosest(type: TypeCheckerScopeType): TypeCheckerScope | null {
