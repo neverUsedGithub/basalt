@@ -10,9 +10,7 @@ event player_event::death {
     @line emoji = "😬";
   }
 
-  if player is_sneaking() {
-    @line unused = "boom";
-  }
+  test == ;
 
   all_players {
     player_action::send_message(

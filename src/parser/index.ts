@@ -1,5 +1,5 @@
 import { Token, TokenType, type Lexer } from "../lexer";
-import type { SourceFile } from "../shared/source";
+import { type SourceFile } from "../shared/source";
 import { Span } from "../shared/span";
 import type {
   BlockNode,
@@ -26,6 +26,7 @@ import type {
   VariableNode,
   TargetExpressionNode,
   TargetStatementNode,
+  ErrorNode,
 } from "./nodes";
 
 const OPERATOR_PRECEDENCE = {
@@ -51,20 +52,34 @@ const CONDITION_OPERATORS = ["<", ">", "<=", ">=", "==", "!="];
 export const IF_CATEGORIES = ["player", "entity", "game", "variable"];
 
 export class Parser {
+  private pointer: number = 0;
+  private tokens: Token[] = [];
   private current: Token;
-  private lookahead: Token;
 
   constructor(
     private source: SourceFile,
     private lexer: Lexer,
+    private mode: "strict" | "tolerant" = "strict",
   ) {
     this.current = lexer.next();
-    this.lookahead = lexer.next();
+    this.tokens.push(this.current);
+  }
+
+  private unadvance() {
+    this.current = this.tokens[--this.pointer];
   }
 
   private advance() {
-    this.current = this.lookahead;
-    this.lookahead = this.lexer.next();
+    if (this.pointer + 1 >= this.tokens.length) this.tokens.push(this.lexer.next());
+    this.current = this.tokens[++this.pointer];
+  }
+
+  private lookahead(): Token {
+    if (this.pointer + 1 < this.tokens.length) return this.tokens[this.pointer + 1];
+    const next = this.lexer.next();
+    this.tokens.push(next);
+
+    return next;
   }
 
   private is(type: TokenType, value?: string) {
@@ -75,8 +90,8 @@ export class Parser {
   }
 
   private isLookahead(type: TokenType, value?: string) {
-    if (this.lookahead.type !== type) return false;
-    if (value && this.lookahead.value !== value) return false;
+    if (this.lookahead().type !== type) return false;
+    if (value && this.lookahead().value !== value) return false;
 
     return true;
   }
@@ -225,11 +240,17 @@ export class Parser {
     if (this.is(TokenType.NUMBER)) return this.pNumber();
     if (this.is(TokenType.STRING)) return this.pString();
 
-    this.source.error({
-      type: "Parser",
-      message: "expected an expression",
+    if (this.mode === "strict")
+      this.source.error({
+        type: "Parser",
+        message: "expected an expression",
+        span: this.current.span,
+      });
+
+    return {
+      kind: "ErrorNode",
       span: this.current.span,
-    });
+    };
   }
 
   private pExpressionIsOperator(): boolean {
@@ -378,7 +399,7 @@ export class Parser {
           });
         }
 
-        if (rhs.kind !== "Identifier" && rhs.kind !== "String") {
+        if (rhs.kind !== "Identifier" && rhs.kind !== "String" && rhs.kind !== "ErrorNode") {
           this.source.error({
             type: "Parser",
             message: `expected an identifier or string`,

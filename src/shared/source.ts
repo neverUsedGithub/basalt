@@ -12,7 +12,7 @@ export class SourceError extends Error {
     public file: SourceFile,
     formatted: string,
   ) {
-    super("\n" + formatted);
+    super(formatted);
   }
 }
 
@@ -56,7 +56,7 @@ export class SourceFile {
     }
 
     out += ` ${empty} |\n`;
-    out += ` ${empty} +-- ${meta.message}\n`;
+    out += ` ${empty} +-- ${meta.message}`;
 
     return out;
   }

@@ -61,10 +61,12 @@ async function cli() {
 
     rows = splitBlocks(newBlocks);
   } catch (e) {
-    if (!(e instanceof SourceError)) throw e;
-
-    console.error(e.message);
-    process.exit(1);
+    if (e instanceof SourceError) {
+      console.error(e.message);
+      process.exit(1);
+    } else {
+      throw e;
+    }
   }
 
   const compileTime = performance.now() - compileStart;

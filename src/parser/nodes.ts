@@ -41,7 +41,7 @@ export interface TypeNameNode extends BaseNode<"TypeName"> {
 
 export interface NamespaceGetPropertyNode extends BaseNode<"NamespaceGetProperty"> {
   namespace: IdentifierNode | NamespaceGetPropertyNode;
-  property: IdentifierNode | StringNode;
+  property: IdentifierNode | StringNode | ErrorNode;
 }
 
 export interface BlockNode extends BaseNode<"Block"> {
@@ -149,7 +149,17 @@ export interface TargetExpressionNode extends BaseNode<"TargetExpression"> {
   expression: ExpressionNode;
 }
 
-export type ParserNode = ProgramNode | UsingNode | EventNode | BlockNode | StatementNode | ExpressionNode | TypeNode;
+export interface ErrorNode extends BaseNode<"ErrorNode"> {}
+
+export type ParserNode =
+  | ProgramNode
+  | UsingNode
+  | EventNode
+  | BlockNode
+  | StatementNode
+  | ExpressionNode
+  | TypeNode
+  | ErrorNode;
 
 export type StatementNode =
   | VariableDefinitionNode
@@ -174,6 +184,7 @@ export type ExpressionNode =
   | BinaryExpressionNode
   | AssignmentExpressionNode
   | ReferenceExpressionNode
-  | TargetExpressionNode;
+  | TargetExpressionNode
+  | ErrorNode;
 
 export type TypeNode = TypeNameNode | IdentifierNode | ParameterizedTypeNode;

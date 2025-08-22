@@ -178,8 +178,11 @@ export class Lexer {
       if ((typeof curr === "object" && "" in curr && typeof curr[""] !== "object") || typeof curr !== "object") {
         const tokenType: TokenType = typeof curr === "object" ? (curr[""] as TokenType) : curr;
 
-        for (let _ = 0; _ < value.length; _++) this.advance();
-        return new Token(tokenType, value, new Span(start, this.location()));
+        for (let _ = 0; _ < value.length-1; _++) this.advance();
+        const end = this.location();
+        this.advance();
+
+        return new Token(tokenType, value, new Span(start, end));
       }
     }
 
