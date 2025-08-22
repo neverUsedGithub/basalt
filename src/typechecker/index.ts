@@ -17,6 +17,7 @@ import {
   TypeCheckerString,
   TypeCheckerVoid,
   TypeCheckerStyledText,
+  TypeCheckerError,
 } from "./types";
 
 export type VariableScope = "@global" | "@saved" | "@thread" | "@line";
@@ -108,7 +109,8 @@ export class TypeChecker {
     message: string,
     span: Span,
   ): asserts type is InstanceType<T> {
-    if (!(type instanceof expected)) {
+    // @ts-expect-error
+    if (!(type instanceof expected) && !(type instanceof TypeCheckerError)) {
       this.source.error({
         type: "Type",
         message: `${message}, but got ${(type as TypeCheckerType).asString()}`,
@@ -120,7 +122,7 @@ export class TypeChecker {
   private checkNode(node: ParserNode, scope: TypeCheckerScope): TypeCheckerType {
     switch (node.kind) {
       case "ErrorNode": {
-        return new TypeCheckerAny();
+        return new TypeCheckerError();
       }
 
       case "Program": {
@@ -182,7 +184,7 @@ export class TypeChecker {
       case "NamespaceGetProperty": {
         const namesp = this.check(node.namespace, scope);
         this.expectType(namesp, TypeCheckerNamespace, "expected a namespace", node.namespace.span);
-        if (node.property.kind === "ErrorNode") return new TypeCheckerAny();
+        if (node.property.kind === "ErrorNode") return new TypeCheckerError();
 
         const propertyName = node.property.kind === "Identifier" ? node.property.name.value : node.property.value.value;
         const value = namesp.getSymbol(propertyName);

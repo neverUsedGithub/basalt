@@ -11,6 +11,7 @@ export { TypeCheckerAction } from "./action";
 export { TypeCheckerString } from "./string";
 export { TypeCheckerNumber } from "./number";
 export { TypeCheckerEvent } from "./event";
+export { TypeCheckerError } from "./error";
 export { TypeCheckerVoid } from "./void";
 export { TypeCheckerList } from "./list";
 export { TypeCheckerDict } from "./dict";
