@@ -90,6 +90,10 @@ export class TypeChecker {
     this.setBuiltins(std.builtins);
   }
 
+  getErrors(): ErrorOptions[] {
+    return this.errors;
+  }
+
   getType(node: ParserNode): TypeCheckerType | null {
     return this.typeMap.get(node) ?? null;
   }
