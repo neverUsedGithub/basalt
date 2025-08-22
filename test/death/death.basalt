@@ -13,6 +13,16 @@ event player_event::join {
   let @line output: number;
   set_variable::absolute_value(ref @line output, @line output);
 
+  set_variable::absolute_value(3, 3, 1, 2, 3, 4, 5, 3, 2)
+
+  set_variable::absolute_value(3, 3, 1, 2, 3, 4, 5, 3, 2)
+
+  set_variable::absolute_value(3, 3, 1, 2, 3, 4, 5, 3, 2)
+
+  set_variable::absolute_value(3, 3, 1, 2, 3, 4, 5, 3, 2)
+
+  set_variable::absolute_value(3, 3, 1, 2, 3, 4, 5, 3, 2)
+
   all_players {
     player_action::send_message(
       @line emoji, @line player_name, @line message, @line emoji,

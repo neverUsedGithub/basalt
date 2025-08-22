@@ -368,12 +368,15 @@ export class TypeChecker {
         this.expectType(fn, TypeCheckerCallable, "expected a callable expression", node.expression.span);
 
         const res = fn.canCall(node, (node) => this.check(node, scope));
+
         if (!res.ok) {
-          this.source.error({
+          this.tryError({
             type: "Type",
             message: res.error.error,
             span: res.error.span,
           });
+
+          return new TypeCheckerError();
         }
 
         return res.signature.return;
