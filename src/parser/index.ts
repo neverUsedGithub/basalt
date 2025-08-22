@@ -1,5 +1,5 @@
 import { Token, TokenType, type Lexer } from "../lexer";
-import { type SourceFile } from "../shared/source";
+import { SourceError, type ErrorOptions, type SourceFile } from "../shared/source";
 import { Span } from "../shared/span";
 import type {
   BlockNode,
@@ -56,6 +56,8 @@ export class Parser {
   private tokens: Token[] = [];
   private current: Token;
 
+  private errors: ErrorOptions[] = [];
+
   constructor(
     private source: SourceFile,
     private lexer: Lexer,
@@ -63,6 +65,17 @@ export class Parser {
   ) {
     this.current = lexer.next();
     this.tokens.push(this.current);
+  }
+
+  getErrors(): ErrorOptions[] {
+    return this.errors;
+  }
+
+  private error(options: ErrorOptions): never;
+  private error(options: ErrorOptions, passable: true): void;
+  private error(options: ErrorOptions, passable?: boolean): void | never {
+    if (this.mode === "strict") this.source.error(options);
+    this.errors.push(options);
   }
 
   private unadvance() {
@@ -98,7 +111,7 @@ export class Parser {
 
   private eat<T extends TokenType>(type: T, value?: string): Token<T> {
     if (!this.is(type, value)) {
-      this.source.error({
+      this.error({
         type: "Parser",
         message: `unexpected token '${this.current.value}' (${this.current.type}) expected ${value ? `'${value}' (${type})` : type}`,
         span: this.current.span,
@@ -157,7 +170,7 @@ export class Parser {
     if (this.is(TokenType.TYPENAME)) ident = this.pTypeNameNode();
     else if (this.is(TokenType.IDENTIFIER)) ident = this.pIdentifier();
     else {
-      this.source.error({
+      this.error({
         type: "Parser",
         message: `expected an identifier or a typename`,
         span: this.current.span,
@@ -240,12 +253,14 @@ export class Parser {
     if (this.is(TokenType.NUMBER)) return this.pNumber();
     if (this.is(TokenType.STRING)) return this.pString();
 
-    if (this.mode === "strict")
-      this.source.error({
+    this.error(
+      {
         type: "Parser",
         message: "expected an expression",
         span: this.current.span,
-      });
+      },
+      true,
+    );
 
     return {
       kind: "ErrorNode",
@@ -353,7 +368,7 @@ export class Parser {
         operator.value === "/="
       ) {
         if (lhs.kind !== "Identifier" && lhs.kind !== "VariableNode" && lhs.kind !== "PropertyAccess") {
-          this.source.error({
+          this.error({
             type: "Parser",
             message: `cannot assign to this type of expression`,
             span: lhs.span,
@@ -373,7 +388,7 @@ export class Parser {
 
       if (operator.value === ".") {
         if (rhs.kind !== "Identifier")
-          this.source.error({
+          this.error({
             type: "Parser",
             message: `invalid syntax`,
             span: rhs.span,
@@ -392,7 +407,7 @@ export class Parser {
 
       if (operator.value === "::") {
         if (lhs.kind !== "Identifier" && lhs.kind !== "NamespaceGetProperty") {
-          this.source.error({
+          this.error({
             type: "Parser",
             message: `cannot access members of this expression`,
             span: lhs.span,
@@ -400,7 +415,7 @@ export class Parser {
         }
 
         if (rhs.kind !== "Identifier" && rhs.kind !== "String" && rhs.kind !== "ErrorNode") {
-          this.source.error({
+          this.error({
             type: "Parser",
             message: `expected an identifier or string`,
             span: rhs.span,
@@ -484,7 +499,7 @@ export class Parser {
       const action = this.eat(TokenType.IDENTIFIER);
 
       if (!IF_CATEGORIES.includes(category.value)) {
-        this.source.error({
+        this.error({
           type: "Parser",
           message: `invalid if category '${category.value}'`,
           span: category.span,
@@ -513,7 +528,7 @@ export class Parser {
     const expression = this.pExpression();
 
     if (expression.kind !== "BinaryExpression" || !CONDITION_OPERATORS.includes(expression.operator.value)) {
-      this.source.error({
+      this.error({
         type: "Parser",
         message: `expected a comparison expression`,
         span: expression.span,
@@ -600,7 +615,7 @@ export class Parser {
     const name = this.pExpression();
 
     if (name.kind !== "Identifier" && name.kind !== "NamespaceGetProperty") {
-      this.source.error({
+      this.error({
         type: "Parser",
         message: `expected an identifier or a namespace access`,
         span: name.span,
