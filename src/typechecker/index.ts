@@ -399,7 +399,7 @@ export class TypeChecker {
 
       case "BinaryExpression": {
         const lhs = this.check(node.lhs, scope);
-        const rhs = this.check(node.lhs, scope);
+        const rhs = this.check(node.rhs, scope);
 
         const result = lhs.execOperator(node.operator.value as BinaryOperators, rhs);
 
