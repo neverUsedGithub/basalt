@@ -119,6 +119,10 @@ export class TypeChecker {
 
   private checkNode(node: ParserNode, scope: TypeCheckerScope): TypeCheckerType {
     switch (node.kind) {
+      case "ErrorNode": {
+        return new TypeCheckerAny();
+      }
+
       case "Program": {
         for (const child of node.body) this.check(child, scope);
 
@@ -178,6 +182,7 @@ export class TypeChecker {
       case "NamespaceGetProperty": {
         const namesp = this.check(node.namespace, scope);
         this.expectType(namesp, TypeCheckerNamespace, "expected a namespace", node.namespace.span);
+        if (node.property.kind === "ErrorNode") return new TypeCheckerAny();
 
         const propertyName = node.property.kind === "Identifier" ? node.property.name.value : node.property.value.value;
         const value = namesp.getSymbol(propertyName);

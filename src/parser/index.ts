@@ -27,6 +27,7 @@ import type {
   TargetExpressionNode,
   TargetStatementNode,
   ErrorNode,
+  ParserNode,
 } from "./nodes";
 
 const OPERATOR_PRECEDENCE = {
@@ -51,10 +52,13 @@ const CONDITION_OPERATORS = ["<", ">", "<=", ">=", "==", "!="];
 
 export const IF_CATEGORIES = ["player", "entity", "game", "variable"];
 
+function noop() {}
+
 export class Parser {
   private pointer: number = 0;
   private tokens: Token[] = [];
   private current: Token;
+  private onNode: (node: ParserNode) => void;
 
   private errors: ErrorOptions[] = [];
 
@@ -62,9 +66,11 @@ export class Parser {
     private source: SourceFile,
     private lexer: Lexer,
     private mode: "strict" | "tolerant" = "strict",
+    onNode: null | ((node: ParserNode) => void),
   ) {
     this.current = lexer.next();
     this.tokens.push(this.current);
+    this.onNode = onNode ?? noop;
   }
 
   getErrors(): ErrorOptions[] {
@@ -93,6 +99,11 @@ export class Parser {
     this.tokens.push(next);
 
     return next;
+  }
+
+  private make<T extends ParserNode>(node: T): T {
+    this.onNode(node);
+    return node;
   }
 
   private is(type: TokenType, value?: string) {
@@ -127,41 +138,41 @@ export class Parser {
   private pIdentifier(): IdentifierNode {
     const token = this.eat(this.is(TokenType.TYPENAME) ? TokenType.TYPENAME : TokenType.IDENTIFIER);
 
-    return {
+    return this.make({
       kind: "Identifier",
       name: token,
       span: token.span,
-    };
+    });
   }
 
   private pNumber(): NumberNode {
     const token = this.eat(TokenType.NUMBER);
 
-    return {
+    return this.make({
       kind: "Number",
       value: token,
       span: token.span,
-    };
+    });
   }
 
   private pString(): StringNode {
     const token = this.eat(TokenType.STRING);
 
-    return {
+    return this.make({
       kind: "String",
       value: token,
       span: token.span,
-    };
+    });
   }
 
   private pTypeNameNode(): TypeNameNode {
     const token = this.eat(TokenType.TYPENAME);
 
-    return {
+    return this.make({
       kind: "TypeName",
       name: token,
       span: token.span,
-    };
+    });
   }
 
   private pTypeNode(): TypeNode {
@@ -188,12 +199,12 @@ export class Parser {
 
       const end = this.eat(TokenType.OPERATOR, "]");
 
-      return {
+      return this.make({
         kind: "ParameterizedType",
         name: ident,
         parameters,
         span: new Span(ident.span.start, end.span.end),
-      };
+      });
     }
 
     return ident;
@@ -202,46 +213,46 @@ export class Parser {
   private pBoolean(): ExpressionNode {
     const token = this.eat(TokenType.KEYWORD);
 
-    return {
+    return this.make({
       kind: "Boolean",
       value: token,
       span: token.span,
-    };
+    });
   }
 
   private pReference(): ReferenceExpressionNode {
     const token = this.eat(TokenType.KEYWORD, "ref");
     const name = this.pVariable();
 
-    return {
+    return this.make({
       kind: "ReferenceExpression",
       name,
       span: new Span(token.span.start, name.span.end),
-    };
+    });
   }
 
   private pVariable(): VariableNode {
     const scope = this.eat(TokenType.SCOPE);
     const name = this.is(TokenType.IDENTIFIER) ? this.eat(TokenType.IDENTIFIER) : this.eat(TokenType.STRING);
 
-    return {
+    return this.make({
       kind: "VariableNode",
       name,
       scope,
       span: new Span(scope.span.start, name.span.end),
-    };
+    });
   }
 
   private pTargetExpression(): TargetExpressionNode {
     const target = this.eat(TokenType.TARGET);
     const expression = this.pExpression();
 
-    return {
+    return this.make({
       kind: "TargetExpression",
       expression,
       target,
       span: new Span(target.span.start, expression.span.end),
-    };
+    });
   }
 
   private pAtomic(): ExpressionNode {
@@ -262,10 +273,10 @@ export class Parser {
       true,
     );
 
-    return {
+    return this.make({
       kind: "ErrorNode",
       span: this.current.span,
-    };
+    });
   }
 
   private pExpressionIsOperator(): boolean {
@@ -291,12 +302,14 @@ export class Parser {
         this.eat(TokenType.OPERATOR, "=");
         const value = this.pExpression();
 
-        keywordArgs.push({
-          kind: "KeywordArgument",
-          name,
-          value,
-          span: new Span(name.span.start, value.span.end),
-        });
+        keywordArgs.push(
+          this.make({
+            kind: "KeywordArgument",
+            name,
+            value,
+            span: new Span(name.span.start, value.span.end),
+          }),
+        );
       } else {
         args.push(this.pExpression());
       }
@@ -315,13 +328,13 @@ export class Parser {
         const { args, keywordArgs } = this.pFunctionCall();
         const end = this.eat(TokenType.DELIMITER, ")").span.end;
 
-        lhs = {
+        lhs = this.make({
           kind: "CallExpression",
           arguments: args,
           expression: lhs,
           keywordArguments: keywordArgs,
           span: new Span(lhs.span.start, end),
-        };
+        });
 
         continue;
       }
@@ -332,13 +345,13 @@ export class Parser {
         const key = this.pExpression();
         const end = this.eat(TokenType.DELIMITER, "]");
 
-        lhs = {
+        lhs = this.make({
           kind: "PropertyAccess",
           object: lhs,
           property: key,
           computed: true,
           span: new Span(lhs.span.start, end.span.end),
-        };
+        });
 
         continue;
       }
@@ -349,11 +362,11 @@ export class Parser {
       if (operator.value === "::" && (this.is(TokenType.KEYWORD) || this.is(TokenType.TYPENAME))) {
         const keyw = this.eat(this.current.type);
 
-        rhs = {
+        rhs = this.make({
           kind: "Identifier",
           name: keyw,
           span: keyw.span,
-        };
+        });
       } else rhs = this.pAtomic();
 
       while (this.pExpressionIsOperator() && this.pExpressionGetPrecedence() > opPrecedence) {
@@ -375,13 +388,13 @@ export class Parser {
           });
         }
 
-        lhs = {
+        lhs = this.make({
           kind: "AssignmentExpression",
           expression: lhs,
           operator,
           value: rhs,
           span: new Span(lhs.span.start, rhs.span.end),
-        };
+        });
 
         continue;
       }
@@ -394,13 +407,13 @@ export class Parser {
             span: rhs.span,
           });
 
-        lhs = {
+        lhs = this.make({
           kind: "PropertyAccess",
           object: lhs,
           property: rhs,
           computed: false,
           span: new Span(lhs.span.start, rhs.span.end),
-        };
+        });
 
         continue;
       }
@@ -422,23 +435,23 @@ export class Parser {
           });
         }
 
-        lhs = {
+        lhs = this.make({
           kind: "NamespaceGetProperty",
           namespace: lhs,
           property: rhs,
           span: new Span(lhs.span.start, rhs.span.end),
-        };
+        });
 
         continue;
       }
 
-      lhs = {
+      lhs = this.make({
         kind: "BinaryExpression",
         operator,
         lhs,
         rhs,
         span: new Span(lhs.span.start, rhs.span.end),
-      };
+      });
     }
 
     return lhs;
@@ -467,24 +480,24 @@ export class Parser {
 
     this.eat(TokenType.SEMICOLON);
 
-    return {
+    return this.make({
       kind: "VariableDefinition",
       name,
       type,
       value,
       span: new Span(start.span.start, value ? value.span.end : type!.span.end),
-    };
+    });
   }
 
   private pReturnStatement(): ReturnStatementNode {
     const start = this.eat(TokenType.KEYWORD, "return").span.start;
     const value = this.pExpression();
 
-    const node: ReturnStatementNode = {
+    const node: ReturnStatementNode = this.make({
       kind: "ReturnStatement",
       value,
       span: new Span(start, value.span.end),
-    };
+    });
 
     this.eat(TokenType.SEMICOLON);
 
@@ -512,7 +525,7 @@ export class Parser {
 
       const block = this.pBlock();
 
-      return {
+      return this.make({
         kind: "IfActionStatement",
         action,
         category,
@@ -520,7 +533,7 @@ export class Parser {
         keywordArguments: keywordArgs,
         block,
         span: new Span(start, block.span.end),
-      };
+      });
     }
 
     this.eat(TokenType.DELIMITER, "(");
@@ -539,24 +552,24 @@ export class Parser {
 
     const block = this.pBlock();
 
-    return {
+    return this.make({
       kind: "IfExpressionStatement",
       expression,
       block,
       span: new Span(start, block.span.end),
-    };
+    });
   }
 
   private pTargetStatement(): TargetStatementNode {
     const target = this.eat(TokenType.TARGET);
     const statement = this.pStatement();
 
-    return {
+    return this.make({
       kind: "TargetStatement",
       target,
       statement,
       span: new Span(target.span.start, statement.span.end),
-    };
+    });
   }
 
   private pStatement(): StatementNode {
@@ -569,11 +582,11 @@ export class Parser {
     const expr = this.pExpression();
     this.eat(TokenType.SEMICOLON);
 
-    return {
+    return this.make({
       kind: "ExpressionStatement",
       expression: expr,
       span: expr.span,
-    };
+    });
   }
 
   private pBlock(): BlockNode {
@@ -589,11 +602,11 @@ export class Parser {
 
     const end = this.eat(TokenType.DELIMITER, "}").span.end;
 
-    return {
+    return this.make({
       kind: "Block",
       body,
       span: new Span(start, end),
-    };
+    });
   }
 
   private pUsing(): UsingNode {
@@ -602,12 +615,12 @@ export class Parser {
     this.eat(TokenType.OPERATOR, "::");
     const name = this.eat(TokenType.IDENTIFIER);
 
-    return {
+    return this.make({
       kind: "Using",
       namespace,
       name,
       span: new Span(start.span.start, name.span.end),
-    };
+    });
   }
 
   private pEvent(): EventNode {
@@ -624,12 +637,12 @@ export class Parser {
 
     const block = this.pBlock();
 
-    return {
+    return this.make({
       kind: "Event",
       event: name,
       body: block,
       span: new Span(start.span.start, block.span.end),
-    };
+    });
   }
 
   private pFunctionDefinition(): FunctionDefinitionNode {
@@ -644,13 +657,15 @@ export class Parser {
       this.eat(TokenType.COLON);
       const parameterType = this.pTypeNode();
 
-      parameters.push({
-        kind: "FunctionParameter",
-        name: parameterName,
-        type: parameterType,
+      parameters.push(
+        this.make({
+          kind: "FunctionParameter",
+          name: parameterName,
+          type: parameterType,
 
-        span: new Span(parameterName.span.start, parameterType.span.end),
-      });
+          span: new Span(parameterName.span.start, parameterType.span.end),
+        }),
+      );
     }
     this.eat(TokenType.DELIMITER, ")");
     this.eat(TokenType.COLON);
@@ -658,14 +673,14 @@ export class Parser {
     const returnType = this.pTypeNode();
     const body = this.pBlock();
 
-    return {
+    return this.make({
       kind: "FunctionDefinition",
       name,
       parameters,
       body,
       returnType,
       span: new Span(start, body.span.end),
-    };
+    });
   }
 
   private pProgram(): ProgramNode {
@@ -682,11 +697,11 @@ export class Parser {
       else body.push(this.pEvent());
     }
 
-    return {
+    return this.make({
       kind: "Program",
       body,
       span: new Span(start, this.current.span.end),
-    };
+    });
   }
 
   parse(): ProgramNode {

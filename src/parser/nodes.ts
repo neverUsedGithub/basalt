@@ -159,7 +159,9 @@ export type ParserNode =
   | StatementNode
   | ExpressionNode
   | TypeNode
-  | ErrorNode;
+  | ErrorNode
+  | KeywordArgumentNode
+  | FunctionParameterNode;
 
 export type StatementNode =
   | VariableDefinitionNode
