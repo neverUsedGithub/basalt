@@ -38,12 +38,12 @@ export class TypeCheckerCallable implements TypeCheckerType {
 
     for (const [name, type] of signature.params) {
       if (paramStr.length > 0) paramStr += ", ";
-      paramStr += `${name}: ${type}`;
+      paramStr += `${name}: ${type.asString()}`;
     }
 
     for (const { name, type } of signature.keywordParams) {
       if (paramStr.length > 0) paramStr += ", ";
-      paramStr += `${name}: ${type} = ...`;
+      paramStr += `${name}: ${type.asString()} = ...`;
     }
 
     return `${this.name}(${paramStr})`;
