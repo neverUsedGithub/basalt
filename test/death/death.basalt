@@ -10,6 +10,8 @@ event player_event::death {
     @line emoji = "😬";
   }
 
+  player_action::
+
   all_players {
     player_action::send_message(
       @line emoji, @line player_name, @line message, @line emoji,

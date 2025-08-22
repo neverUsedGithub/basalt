@@ -80,7 +80,7 @@ export class Parser {
   private error(options: ErrorOptions): never;
   private error(options: ErrorOptions, passable: true): void;
   private error(options: ErrorOptions, passable?: boolean): void | never {
-    if (this.mode === "strict") this.source.error(options);
+    if (this.mode === "strict" || !passable) this.source.error(options);
     this.errors.push(options);
   }
 
