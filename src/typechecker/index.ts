@@ -1,6 +1,6 @@
 import type { BinaryOperators } from "../lexer";
 import type { ParserNode, ProgramNode } from "../parser/nodes";
-import type { SourceFile } from "../shared/source";
+import type { ErrorOptions, SourceFile } from "../shared/source";
 import { Span } from "../shared/span";
 import * as std from "../standard";
 import {
@@ -78,9 +78,13 @@ export class TypeChecker {
   private typeMap: Map<ParserNode, TypeCheckerType> = new Map();
   private scopeMap: Map<ParserNode, TypeCheckerScope> = new Map();
 
+  private errors: ErrorOptions[] = [];
+
   constructor(
     private source: SourceFile,
     private ast: ProgramNode,
+
+    private mode: "strict" | "tolerant",
   ) {
     this.topScope = new TypeCheckerScope(TypeCheckerScopeType.GLOBAL, null, source.getSpan());
     this.setBuiltins(std.builtins);
@@ -101,6 +105,11 @@ export class TypeChecker {
     }
 
     return null;
+  }
+
+  private tryError(options: ErrorOptions): void {
+    if (this.mode === "strict") this.source.error(options);
+    this.errors.push(options);
   }
 
   private expectType<T extends new (...args: any[]) => TypeCheckerType>(
@@ -144,29 +153,35 @@ export class TypeChecker {
         const namespace = this.topScope.getSymbol(node.namespace.value, "@global");
 
         if (namespace === null) {
-          this.source.error({
+          this.tryError({
             type: "Type",
             message: `namespace '${node.namespace.value}' hasn't been defined`,
             span: node.namespace.span,
           });
+
+          return new TypeCheckerError();
         }
 
         if (!(namespace instanceof TypeCheckerNamespace)) {
-          this.source.error({
+          this.tryError({
             type: "Type",
             message: `'${namespace}' is not a namespace`,
             span: node.namespace.span,
           });
+
+          return new TypeCheckerError();
         }
 
         const value = namespace.getSymbol(node.name.value);
 
         if (value === null) {
-          this.source.error({
+          this.tryError({
             type: "Type",
             message: `namespace '${node.namespace.value}' has no member '${node.name.value}'`,
             span: node.name.span,
           });
+
+          return new TypeCheckerError();
         }
 
         this.topScope.addSymbol(node.name.value, value, "@global");
@@ -190,11 +205,13 @@ export class TypeChecker {
         const value = namesp.getSymbol(propertyName);
 
         if (value === null) {
-          this.source.error({
+          this.tryError({
             type: "Type",
             message: `${namesp.asString()} has no member '${propertyName}'`,
             span: node.property.span,
           });
+
+          return new TypeCheckerError();
         }
 
         return value;
@@ -203,12 +220,15 @@ export class TypeChecker {
       case "VariableNode": {
         const data = scope.getSymbol(node.name.value, node.scope.value as VariableScope);
 
-        if (!data)
-          this.source.error({
+        if (!data) {
+          this.tryError({
             type: "Type",
             message: `couldn't resolve variable '${node.name.value}' with scope ${node.scope.value}`,
             span: node.span,
           });
+
+          return new TypeCheckerError();
+        }
 
         return data;
       }
@@ -216,12 +236,15 @@ export class TypeChecker {
       case "Identifier": {
         const data = scope.getSymbol(node.name.value, "@global");
 
-        if (!data)
-          this.source.error({
+        if (!data) {
+          this.tryError({
             type: "Type",
             message: `couldn't resolve global variable '${node.name.value}', maybe you forgot a variable scope?`,
             span: node.name.span,
           });
+
+          return new TypeCheckerError();
+        }
 
         return data;
       }
@@ -229,8 +252,11 @@ export class TypeChecker {
       case "VariableDefinition": {
         const valueType = node.type ? this.check(node.type, scope) : this.check(node.value!, scope);
 
-        if (valueType instanceof TypeCheckerVoid)
-          this.source.error({ type: "Type", message: `cannot assign void to variable`, span: node.span });
+        if (valueType instanceof TypeCheckerVoid) {
+          this.tryError({ type: "Type", message: `cannot assign void to variable`, span: node.span });
+
+          return new TypeCheckerError();
+        }
 
         scope.addSymbol(node.name.name.value, valueType, node.name.scope.value as VariableScope);
 
@@ -248,12 +274,15 @@ export class TypeChecker {
       case "ReferenceExpression": {
         const symbol = scope.getSymbol(node.name.name.value, node.name.scope.value as VariableScope);
 
-        if (symbol === null)
-          this.source.error({
+        if (symbol === null) {
+          this.tryError({
             type: "Type",
             message: `variable '${node.name.name.value}' hasn't been defined`,
             span: node.name.span,
           });
+
+          return new TypeCheckerError();
+        }
 
         const type = new TypeCheckerReference();
         type.addGenericParameters([symbol]);
@@ -326,7 +355,6 @@ export class TypeChecker {
         this.expectType(fn, TypeCheckerCallable, "expected a callable expression", node.expression.span);
 
         const res = fn.canCall(node, (node) => this.check(node, scope));
-
         if (!res.ok) {
           this.source.error({
             type: "Type",

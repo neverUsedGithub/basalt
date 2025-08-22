@@ -44,7 +44,7 @@ async function cli() {
     const parser = new Parser(source, lexer, "strict", null);
     const ast = parser.parse();
 
-    const checker = new TypeChecker(source, ast);
+    const checker = new TypeChecker(source, ast, "strict");
     checker.checkProgram();
 
     const codegen = new CodeGen(source, checker, ast);
