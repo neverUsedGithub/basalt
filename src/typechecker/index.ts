@@ -430,7 +430,7 @@ export class TypeChecker {
       }
 
       case "IfActionStatement": {
-        if (node.category === null || node.block === null) return new TypeCheckerError();
+        if (node.category === null || node.action === null || node.block === null) return new TypeCheckerError();
 
         const conditionTypes = std.conditions[`if_${node.category.value}`];
         const conditionCallable = conditionTypes.get(node.action.value);

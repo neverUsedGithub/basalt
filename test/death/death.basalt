@@ -10,7 +10,7 @@ event player_event::join {
     @line emoji = "😬";
   }
 
-  if player is_looking_at() {}
+  
 
   all_players {
     player_action::send_message(
