@@ -84,6 +84,14 @@ export class Parser {
     this.errors.push(options);
   }
 
+  private addEatError(type: TokenType, value?: string) {
+    this.errors.push({
+      type: "Parser",
+      span: this.current.span,
+      message: this.formatExpected(type, value),
+    });
+  }
+
   private unadvance() {
     this.current = this.tokens[--this.pointer];
   }
@@ -550,6 +558,8 @@ export class Parser {
 
         args = fnCall.args;
         keywordArgs = fnCall.keywordArgs;
+      } else {
+        this.addEatError(TokenType.DELIMITER, "(");
       }
 
       let block: BlockNode | null = null;
@@ -557,6 +567,8 @@ export class Parser {
       if (this.mode === "strict" || this.is(TokenType.DELIMITER, "{")) {
         block = this.pBlock();
         end = block.span.end;
+      } else {
+        this.addEatError(TokenType.DELIMITER, "{");
       }
 
       return this.make({
@@ -616,11 +628,7 @@ export class Parser {
     const expr = this.pExpression();
 
     if (this.mode === "tolerant" && this.current.type === TokenType.NEWLINE) {
-      this.errors.push({
-        type: "Parser",
-        message: this.formatExpected(TokenType.SEMICOLON),
-        span: this.current.span,
-      });
+      this.addEatError(TokenType.SEMICOLON);
 
       return this.make({
         kind: "ExpressionStatement",
