@@ -132,11 +132,11 @@ export interface IfExpressionStatementNode extends BaseNode<"IfExpressionStateme
 }
 
 export interface IfActionStatementNode extends BaseNode<"IfActionStatement"> {
-  category: Token;
+  category: Token | null;
   action: Token;
   arguments: ExpressionNode[];
   keywordArguments: KeywordArgumentNode[];
-  block: BlockNode;
+  block: BlockNode | null;
 }
 
 export interface TargetStatementNode extends BaseNode<"TargetStatement"> {

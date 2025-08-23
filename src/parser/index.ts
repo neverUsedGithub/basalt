@@ -523,22 +523,41 @@ export class Parser {
     const start = this.eat(TokenType.KEYWORD, "if").span.start;
 
     if (this.is(TokenType.KEYWORD)) {
-      const category = this.eat(TokenType.KEYWORD);
+      let category: Token | null = this.eat(TokenType.KEYWORD);
       const action = this.eat(TokenType.IDENTIFIER);
 
       if (!IF_CATEGORIES.includes(category.value)) {
-        this.error({
-          type: "Parser",
-          message: `invalid if category '${category.value}'`,
-          span: category.span,
-        });
+        this.error(
+          {
+            type: "Parser",
+            message: `invalid if category '${category.value}'`,
+            span: category.span,
+          },
+          true,
+        );
+
+        category = null;
       }
 
-      this.eat(TokenType.DELIMITER, "(");
-      const { args, keywordArgs } = this.pFunctionCall();
-      this.eat(TokenType.DELIMITER, ")");
+      let args: ExpressionNode[] = [];
+      let keywordArgs: KeywordArgumentNode[] = [];
+      let end = start;
 
-      const block = this.pBlock();
+      if (this.mode === "strict" || this.is(TokenType.DELIMITER, "(")) {
+        this.eat(TokenType.DELIMITER, "(");
+        const fnCall = this.pFunctionCall();
+        end = this.eat(TokenType.DELIMITER, ")").span.end;
+
+        args = fnCall.args;
+        keywordArgs = fnCall.keywordArgs;
+      }
+
+      let block: BlockNode | null = null;
+
+      if (this.mode === "strict" || this.is(TokenType.DELIMITER, "{")) {
+        block = this.pBlock();
+        end = block.span.end;
+      }
 
       return this.make({
         kind: "IfActionStatement",
@@ -547,7 +566,7 @@ export class Parser {
         arguments: args,
         keywordArguments: keywordArgs,
         block,
-        span: new Span(start, block.span.end),
+        span: new Span(start, end),
       });
     }
 

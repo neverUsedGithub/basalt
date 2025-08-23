@@ -1,5 +1,12 @@
 import type { DFBlock, DFBlockTarget, DFCodeBlock, DFItem, DFParameter, DFTarget, DFVar } from "../diamondfire/types";
-import type { BaseNode, ExpressionNode, KeywordArgumentNode, ParserNode, ProgramNode } from "../parser/nodes";
+import type {
+  BaseNode,
+  ExpressionNode,
+  KeywordArgumentNode,
+  ParserNode,
+  ProgramNode,
+  StringNode,
+} from "../parser/nodes";
 import type { OptionsItem } from "../actiondump";
 import type { SourceFile } from "../shared/source";
 import { type TypeChecker, type VariableScope } from "../typechecker";
@@ -221,7 +228,8 @@ export class CodeGen {
         const namespace = this.checker.getType(node.namespace)!;
 
         if (namespace instanceof TypeCheckerGameValues) {
-          const prop = node.property.kind === "Identifier" ? node.property.name.value : node.property.value.value;
+          const prop =
+            node.property.kind === "Identifier" ? node.property.name.value : (node.property as StringNode).value.value;
           const gameValue = namespace.getGameValue(prop)!;
 
           return {
@@ -614,7 +622,7 @@ export class CodeGen {
           direct: "open",
         });
 
-        this.generate(node.block, node);
+        this.generate(node.block!, node);
 
         this.blocks.add({
           id: "bracket",
