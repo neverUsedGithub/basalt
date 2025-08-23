@@ -546,7 +546,14 @@ export class Parser {
       }
 
       let category: Token | null = this.eat(TokenType.KEYWORD);
-      const action = this.eat(TokenType.IDENTIFIER);
+      let action: Token | null = null;
+
+      let end = category.span.end;
+
+      if (this.is(TokenType.IDENTIFIER)) {
+        action = this.eat(TokenType.IDENTIFIER);
+        end = action.span.end;
+      }
 
       if (!IF_CATEGORIES.includes(category.value)) {
         this.error(
@@ -563,7 +570,6 @@ export class Parser {
 
       let args: ExpressionNode[] = [];
       let keywordArgs: KeywordArgumentNode[] = [];
-      let end = start;
 
       if (this.mode === "strict" || this.is(TokenType.DELIMITER, "(")) {
         this.eat(TokenType.DELIMITER, "(");
