@@ -541,7 +541,7 @@ export class Parser {
           arguments: [],
           keywordArguments: [],
 
-          span: new Span(start, start),
+          span: new Span(start, this.current.span.end),
         };
       }
 
