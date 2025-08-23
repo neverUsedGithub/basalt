@@ -170,6 +170,10 @@ export class CodeGen {
       }
 
       case "String": {
+        return { id: "txt", data: { name: node.value.value } };
+      }
+
+      case "StyledText": {
         return { id: "comp", data: { name: node.value.value } };
       }
 

@@ -10,7 +10,7 @@ event player_event::join {
     @line emoji = "😬";
   }
 
-  if game 
+  if game command_equals('test') {}
 
   all_players {
     player_action::send_message(

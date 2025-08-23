@@ -290,6 +290,10 @@ export class TypeChecker {
       }
 
       case "String": {
+        return new TypeCheckerString();
+      }
+      
+      case "StyledText": {
         return new TypeCheckerStyledText();
       }
 

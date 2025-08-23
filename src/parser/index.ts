@@ -28,6 +28,7 @@ import type {
   TargetStatementNode,
   ErrorNode,
   ParserNode,
+  StyledTextNode,
 } from "./nodes";
 
 const OPERATOR_PRECEDENCE = {
@@ -182,6 +183,16 @@ export class Parser {
     });
   }
 
+  private pStyledText(): StyledTextNode {
+    const token = this.eat(TokenType.STYLED_TEXT);
+
+    return this.make({
+      kind: "StyledText",
+      value: token,
+      span: token.span,
+    });
+  }
+
   private pTypeNameNode(): TypeNameNode {
     const token = this.eat(TokenType.TYPENAME);
 
@@ -280,6 +291,7 @@ export class Parser {
     if (this.is(TokenType.SCOPE)) return this.pVariable();
     if (this.is(TokenType.NUMBER)) return this.pNumber();
     if (this.is(TokenType.STRING)) return this.pString();
+    if (this.is(TokenType.STYLED_TEXT)) return this.pStyledText();
 
     this.error(
       {

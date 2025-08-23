@@ -27,6 +27,10 @@ export interface StringNode extends BaseNode<"String"> {
   value: Token;
 }
 
+export interface StyledTextNode extends BaseNode<"StyledText"> {
+  value: Token;
+}
+
 export interface BooleanNode extends BaseNode<"Boolean"> {
   value: Token;
 }
@@ -179,6 +183,7 @@ export type ExpressionNode =
   | SpecialNode
   | NumberNode
   | StringNode
+  | StyledTextNode
   | BooleanNode
   | NamespaceGetPropertyNode
   | PropertyAccessNode
