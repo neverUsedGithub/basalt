@@ -10,10 +10,7 @@ event player_event::join {
     @line emoji = "😬";
   }
 
-  let @line output: number;
-  set_variable::absolute_value(ref @line output, @line output);
-
-  set_variable
+  
 
   all_players {
     player_action::send_message(

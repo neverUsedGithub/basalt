@@ -434,21 +434,25 @@ export class TypeChecker {
         const conditionCallable = conditionTypes.get(node.action.value);
 
         if (conditionCallable === undefined) {
-          this.source.error({
+          this.tryError({
             type: "Type",
             message: `cannot find conditional action '${node.action.value}' in category ${node.action.value}`,
             span: node.action.span,
           });
+
+          return new TypeCheckerError();
         }
 
         const result = conditionCallable.canCall(node, (node) => this.check(node, scope));
 
         if (!result.ok) {
-          this.source.error({
+          this.tryError({
             type: "Type",
             message: result.error.error,
             span: result.error.span,
           });
+
+          return new TypeCheckerError();
         }
 
         this.check(node.block, scope);
