@@ -285,7 +285,7 @@ export class Lexer {
       const end = this.location();
       this.advance();
 
-      return new Token(opener === '"' ? TokenType.STRING : TokenType.STYLED_TEXT, content, new Span(start, end));
+      return new Token(opener === "'" ? TokenType.STRING : TokenType.STYLED_TEXT, content, new Span(start, end));
     }
 
     if (isNumeric(this.current)) {
