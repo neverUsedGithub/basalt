@@ -532,7 +532,7 @@ export class Parser {
 
     if (this.is(TokenType.KEYWORD) || !this.is(TokenType.DELIMITER, "(")) {
       if (this.mode === "tolerant" && !this.is(TokenType.KEYWORD)) {
-        return {
+        return this.make({
           kind: "IfActionStatement",
 
           block: null,
@@ -542,7 +542,7 @@ export class Parser {
           keywordArguments: [],
 
           span: new Span(start, this.current.span.end),
-        };
+        });
       }
 
       let category: Token | null = this.eat(TokenType.KEYWORD);
