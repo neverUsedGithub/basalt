@@ -530,7 +530,7 @@ export class Parser {
   private pIfStatement(): IfExpressionStatementNode | IfActionStatementNode {
     const start = this.eat(TokenType.KEYWORD, "if").span.start;
 
-    if (this.is(TokenType.KEYWORD) && !this.is(TokenType.DELIMITER, "(")) {
+    if (this.is(TokenType.KEYWORD) || !this.is(TokenType.DELIMITER, "(")) {
       if (this.mode === "tolerant" && !this.is(TokenType.KEYWORD)) {
         return {
           kind: "IfActionStatement",
