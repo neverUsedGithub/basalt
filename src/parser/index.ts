@@ -154,7 +154,7 @@ export class Parser {
   }
 
   private pIdentifier(): IdentifierNode {
-    const token = this.eat(this.is(TokenType.TYPENAME) ? TokenType.TYPENAME : TokenType.IDENTIFIER);
+    const token = this.eat(TokenType.IDENTIFIER);
 
     return this.make({
       kind: "Identifier",
@@ -285,7 +285,7 @@ export class Parser {
 
   private pAtomic(): ExpressionNode {
     if (this.is(TokenType.KEYWORD, "true") || this.is(TokenType.KEYWORD, "false")) return this.pBoolean();
-    if (this.is(TokenType.IDENTIFIER) || this.is(TokenType.TYPENAME)) return this.pIdentifier();
+    if (this.is(TokenType.IDENTIFIER)) return this.pIdentifier();
     if (this.is(TokenType.KEYWORD, "ref")) return this.pReference();
     if (this.is(TokenType.TARGET)) return this.pTargetExpression();
     if (this.is(TokenType.SCOPE)) return this.pVariable();
