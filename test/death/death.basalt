@@ -10,6 +10,8 @@ event player_event::join {
     @line emoji = "😬";
   }
 
+  @line emoji = set_e
+
   @line emoji = set_variable::random_value("a", "b", "c") as text;
 
   all_players {

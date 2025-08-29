@@ -91,7 +91,7 @@ export class CodeGen {
     extraItems?: DFItem[],
   ): void {
     const items: { item: DFItem; slot: number }[] = extraItems ? extraItems.map((item, slot) => ({ item, slot })) : [];
-    for (const item of args) items.push({ item: this.generateItem(item), slot: items.length + 1 });
+    for (const item of args) items.push({ item: this.generateItem(item), slot: items.length });
 
     let slot = items.length;
     for (const arg of keywordArguments) {
