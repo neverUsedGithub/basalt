@@ -1,18 +1,22 @@
 fn test(foo: string): void {}
 
+# fn random_value[T](...values: list[T]) {
+#   return set_variable::random_value(...values) as T;
+# }
+
 event player_event::join {
   let @line player_name = game_values::name;
   let @line message = "died!";
   let @line emoji = "💀";
+
+  let @line foo: dict[any];
 
   if player is_sneaking() {
     @line message = "died while sneaking!";
     @line emoji = "😬";
   }
 
-  @line emoji = set_e
-
-  @line emoji = set_variable::random_value("a", "b", "c") as text;
+  if variable dict_has_key(@line foo, 'hi') {}
 
   all_players {
     player_action::send_message(

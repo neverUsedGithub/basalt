@@ -226,7 +226,7 @@ export class Parser {
         parameters.push(this.pTypeNode());
       }
 
-      const end = this.eat(TokenType.OPERATOR, "]");
+      const end = this.eat(TokenType.DELIMITER, "]");
 
       return this.make({
         kind: "ParameterizedType",
