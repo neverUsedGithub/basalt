@@ -422,11 +422,13 @@ export class TypeChecker {
         const rhs = this.check(node.value, scope);
 
         if (!lhs.equals(rhs)) {
-          this.source.error({
+          this.tryError({
             type: "Type",
             message: `type '${rhs.asString()}' is not assignable to type '${lhs.asString()}'`,
             span: node.span,
           });
+
+          return new TypeCheckerError();
         }
 
         return lhs;
