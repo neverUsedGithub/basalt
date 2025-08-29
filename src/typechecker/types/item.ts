@@ -1,21 +1,23 @@
 import type { BinaryOperators } from "../../lexer";
 import { TypeCheckerBoolean } from "./boolean";
 import type { TypeCheckerType } from "./type";
-import { TypeCheckerVoid } from "./void";
 
-export class TypeCheckerReference implements TypeCheckerType {
-  private valueType: TypeCheckerType = new TypeCheckerVoid();
+export class TypeCheckerItem implements TypeCheckerType {
+  private stackSize: number;
 
-  unwrap(): TypeCheckerType {
-    return this.valueType;
+  constructor(
+    private itemID: string,
+    stackSize?: number,
+  ) {
+    this.stackSize = stackSize ?? 1;
   }
 
   asString(): string {
-    return `ref[${this.valueType.asString()}]`;
+    return `item("${this.itemID}", ${this.stackSize})`;
   }
 
   equals(other: TypeCheckerType): boolean {
-    return other instanceof TypeCheckerReference && this.valueType.equals(other.valueType);
+    return other instanceof TypeCheckerItem;
   }
 
   getSymbol(name: string): TypeCheckerType | null {
@@ -23,10 +25,7 @@ export class TypeCheckerReference implements TypeCheckerType {
   }
 
   addGenericParameters(params: TypeCheckerType[]): { ok: true } | { ok: false; message: string } {
-    if (params.length !== 1) return { ok: false, message: `expected one generic argument` };
-    this.valueType = params[0];
-
-    return { ok: true };
+    return { ok: false, message: `${this.asString()} is not generic` };
   }
 
   execOperator(operator: BinaryOperators, rhs: TypeCheckerType): TypeCheckerType | null {

@@ -153,6 +153,11 @@ export interface TargetExpressionNode extends BaseNode<"TargetExpression"> {
   expression: ExpressionNode;
 }
 
+export interface TypeCastNode extends BaseNode<"TypeCast"> {
+  expression: ExpressionNode;
+  type: TypeNode;
+}
+
 export interface ErrorNode extends BaseNode<"ErrorNode"> {}
 
 export type ParserNode =
@@ -192,6 +197,7 @@ export type ExpressionNode =
   | AssignmentExpressionNode
   | ReferenceExpressionNode
   | TargetExpressionNode
+  | TypeCastNode
   | ErrorNode;
 
 export type TypeNode = TypeNameNode | IdentifierNode | ParameterizedTypeNode;

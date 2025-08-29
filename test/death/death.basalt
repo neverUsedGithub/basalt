@@ -10,19 +10,12 @@ event player_event::join {
     @line emoji = "😬";
   }
 
-  if game command_equals('hello') {
-    player_action::send_message("Hello!");
-  }
-
-
-  if variable item_equals(void) {
-    e;
-  }
+  @line emoji = set_variable::random_value("a", "b", "c") as text;
 
   all_players {
     player_action::send_message(
       @line emoji, @line player_name, @line message, @line emoji,
-      alignment_mode="centered"
+      alignment_mode='centered'
     );
   }
 }

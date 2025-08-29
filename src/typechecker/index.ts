@@ -276,15 +276,28 @@ export class TypeChecker {
       }
 
       case "VariableDefinition": {
-        const valueType = node.type ? this.check(node.type, scope) : this.check(node.value!, scope);
+        const explicitType = node.type ? this.check(node.type, scope) : null;
+        const valueType = node.value ? this.check(node.value, scope) : null;
 
-        if (valueType instanceof TypeCheckerVoid) {
+        if (explicitType && valueType && !(valueType instanceof TypeCheckerAny) && !explicitType.equals(valueType)) {
+          this.tryError({
+            type: "Type",
+            message: `type '${valueType.asString()}' cannot be assigned to a variable with type '${explicitType.asString()}'`,
+            span: node.value!.span,
+          });
+
+          return new TypeCheckerError();
+        }
+
+        const checkType = (explicitType ?? valueType)!;
+
+        if (checkType instanceof TypeCheckerVoid) {
           this.tryError({ type: "Type", message: `cannot assign void to variable`, span: node.span });
 
           return new TypeCheckerError();
         }
 
-        scope.addSymbol(node.name.name.value, valueType, node.name.scope.value as VariableScope);
+        scope.addSymbol(node.name.name.value, checkType, node.name.scope.value as VariableScope);
 
         return new TypeCheckerVoid();
       }
@@ -292,7 +305,7 @@ export class TypeChecker {
       case "String": {
         return new TypeCheckerString();
       }
-      
+
       case "StyledText": {
         return new TypeCheckerStyledText();
       }
@@ -378,6 +391,11 @@ export class TypeChecker {
 
       case "ExpressionStatement": {
         return this.check(node.expression, scope);
+      }
+
+      case "TypeCast": {
+        this.check(node.expression, scope);
+        return this.check(node.type, scope);
       }
 
       case "CallExpression": {

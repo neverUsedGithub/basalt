@@ -114,6 +114,9 @@ const CONSTANT_TOKENS = {
     "=": TokenType.OPERATOR,
   },
   ",": TokenType.COMMA,
+  a: {
+    s: TokenType.OPERATOR,
+  },
 } as const;
 
 export type BinaryOperators = "==" | "!=" | ">" | ">=" | "<" | "<=";

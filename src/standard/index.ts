@@ -220,10 +220,19 @@ for (const block of actionDump.codeblocks) {
           });
         }
 
+        const anyRef = new TypeCheckerReference();
+        anyRef.addGenericParameters([new TypeCheckerAny()]);
+
         for (const perm of permutations) {
+          let returnType: TypeCheckerType = new TypeCheckerVoid();
+
+          if (perm.length > 0 && perm[0].type instanceof TypeCheckerReference && perm[0].type.equals(anyRef)) {
+            returnType = (perm.shift()!.type as TypeCheckerReference).unwrap();
+          }
+
           signatures.push({
             params: perm.map(({ name, type }, i) => [name, type]),
-            return: new TypeCheckerVoid(),
+            return: returnType,
             keywordParams,
             variadic: isVariadic,
           });

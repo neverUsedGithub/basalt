@@ -32,6 +32,7 @@ import type {
 } from "./nodes";
 
 const OPERATOR_PRECEDENCE = {
+  as: 13,
   "::": 12,
   call: 11,
   prop: 10,
@@ -314,8 +315,8 @@ export class Parser {
 
   private pExpressionGetPrecedence(): number {
     if (this.is(TokenType.OPERATOR)) return OPERATOR_PRECEDENCE[this.current.value as keyof typeof OPERATOR_PRECEDENCE];
-    if (this.is(TokenType.DELIMITER, "(")) return OPERATOR_PRECEDENCE["call"];
-    if (this.is(TokenType.DELIMITER, "[")) return OPERATOR_PRECEDENCE["prop"];
+    if (this.is(TokenType.DELIMITER, "(")) return OPERATOR_PRECEDENCE.call;
+    if (this.is(TokenType.DELIMITER, "[")) return OPERATOR_PRECEDENCE.prop;
 
     throw "UNREACHABLE";
   }
@@ -402,7 +403,11 @@ export class Parser {
           name: keyw,
           span: keyw.span,
         });
-      } else rhs = this.pAtomic();
+      } else if (operator.value === "as") {
+        rhs = this.pTypeNode() as ExpressionNode;
+      } else {
+        rhs = this.pAtomic();
+      }
 
       while (this.pExpressionIsOperator() && this.pExpressionGetPrecedence() > opPrecedence) {
         rhs = this.pExpressionInner(rhs, opPrecedence + 1);
@@ -447,6 +452,17 @@ export class Parser {
           object: lhs,
           property: rhs,
           computed: false,
+          span: new Span(lhs.span.start, rhs.span.end),
+        });
+
+        continue;
+      }
+
+      if (operator.value === "as") {
+        lhs = this.make({
+          kind: "TypeCast",
+          expression: lhs,
+          type: rhs as TypeNode,
           span: new Span(lhs.span.start, rhs.span.end),
         });
 

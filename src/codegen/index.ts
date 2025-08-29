@@ -23,6 +23,7 @@ import {
   TypeCheckerNumber,
   TypeCheckerReference,
   TypeCheckerString,
+  TypeCheckerVoid,
   type TypeCheckerType,
 } from "../typechecker/types";
 import { DFBlockRow, BlockRowManager } from "../shared/blocks";
@@ -86,10 +87,13 @@ export class CodeGen {
     args: ExpressionNode[],
     keywordArguments: KeywordArgumentNode[],
     expr: TypeCheckerAction,
-  ): void {
-    const items = args.map((item, i) => ({ item: this.generateItem(item), slot: i }));
-    let slot = args.length;
 
+    extraItems?: DFItem[],
+  ): void {
+    const items: { item: DFItem; slot: number }[] = extraItems ? extraItems.map((item, slot) => ({ item, slot })) : [];
+    for (const item of args) items.push({ item: this.generateItem(item), slot: items.length + 1 });
+
+    let slot = items.length;
     for (const arg of keywordArguments) {
       const param = signature.keywordParams.find((p) => p.name === arg.name.value)!;
 
@@ -165,6 +169,10 @@ export class CodeGen {
 
   private generateItem(node: ParserNode): DFItem {
     switch (node.kind) {
+      case "TypeCast": {
+        return this.generateItem(node.expression);
+      }
+
       case "Number": {
         return { id: "num", data: { name: node.value.value } };
       }
@@ -203,11 +211,21 @@ export class CodeGen {
         } as const;
 
         if (expr instanceof TypeCheckerAction) {
-          this.source.error({
-            type: "CodeGen",
-            message: `this expression cannot be used here`,
-            span: node.span,
-          });
+          const res = expr.canCall(node, (node) => this.checker.getType(node)!);
+          if (!res.ok) throw new Error("unreachable");
+
+          if (res.signature.return instanceof TypeCheckerVoid)
+            this.source.error({
+              type: "CodeGen",
+              message: "this action cannot be used here",
+              span: node.span,
+            });
+
+          const tempName = this.nextTempVariable();
+          const tempVar = { id: "var", data: { name: tempName, scope: "line" } } as const;
+
+          this.generateAction(res.signature, node.arguments, node.keywordArguments, expr, [tempVar]);
+          return tempVar;
         }
 
         this.blocks.add({
