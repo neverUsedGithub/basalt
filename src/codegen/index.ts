@@ -99,39 +99,15 @@ export class CodeGen {
 
       if (!param.tag) items.push({ item: this.generateItem(arg.value), slot: slot++ });
       else {
-        if (arg.value.kind !== "String" && arg.value.kind !== "Boolean" && arg.value.kind !== "Identifier")
-          this.source.error({
-            type: "Generator",
-            message: "expected a string, a boolean or a variable",
-            span: arg.span,
-          });
+        let literalOption: string | null = null;
 
-        const argValue =
-          arg.value.kind === "Identifier"
-            ? new TypeCheckerAny()
-            : new TypeCheckerLiteral(
-                arg.value.kind === "Boolean" ? arg.value.value.value === "true" : arg.value.value.value,
-              );
-
-        let option: OptionsItem | null = null;
-
-        if (arg.value.kind === "Identifier") {
-          option = param.tag.tag.options[0];
-        } else {
-          for (let i = 0; i < param.tag.values.length; i++) {
-            if (param.tag.values[i].equals(argValue)) {
-              option = param.tag.tag.options[i];
-              break;
+        if (arg.value.kind === "String" || arg.value.kind === "Boolean") {
+          for (const option of param.tag.tag.options) {
+            if (option.name === arg.value.value.value) {
+              literalOption = option.name;
             }
           }
         }
-
-        if (option === null)
-          this.source.error({
-            type: "Generator",
-            message: `invalid value for parameter '${param.tag.tag.name}', possible values ${param.tag.values.map((v) => v.asString()).join(", ")}`,
-            span: arg.span,
-          });
 
         const item: DFItem = {
           id: "bl_tag",
@@ -139,11 +115,11 @@ export class CodeGen {
             block: expr.opts.codeblock,
             action: expr.opts.action,
             tag: param.tag.tag.name,
-            option: option.name,
+            option: literalOption ?? param.tag.tag.defaultOption,
           },
         };
 
-        if (arg.value.kind === "Identifier") item.data.variable = this.generateItem(arg.value) as DFVar;
+        if (arg.value.kind === "VariableNode") item.data.variable = this.generateItem(arg.value) as DFVar;
 
         items.push({
           item,

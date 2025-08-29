@@ -1,9 +1,11 @@
 import type { CallExpressionNode, ExpressionNode, KeywordArgumentNode, ParserNode } from "../../parser/nodes";
 import type { TagsItem } from "../../actiondump";
-import type { TypeCheckerLiteral } from "./literal";
+import { TypeCheckerLiteral } from "./literal";
 import type { TypeCheckerType } from "./type";
 import type { BinaryOperators } from "../../lexer";
 import type { Span } from "../../shared/span";
+import { TypeCheckerString } from "./string";
+import { TypeCheckerBoolean } from "./boolean";
 
 export interface TypeCheckerCallableSignature {
   return: TypeCheckerType;
@@ -16,7 +18,7 @@ export interface TypeCheckerCallableKeywordParam {
   name: string;
   type: TypeCheckerType;
   optional: boolean;
-  tag?: { tag: TagsItem; values: TypeCheckerLiteral[] };
+  tag?: { type: "string" | "boolean"; tag: TagsItem; values: TypeCheckerLiteral[] };
 }
 
 export interface SignatureError {
@@ -111,7 +113,7 @@ export class TypeCheckerCallable implements TypeCheckerType {
 
         if (!found) {
           errorMessages.push({
-            error: `unexpected keyword argument ${param.name.value}, available keyword arguments: ${sig.keywordParams.map((p) => `'${p.name}'`).join(", ")}`,
+            error: `unexpected keyword argument '${param.name.value}', available keyword arguments: ${sig.keywordParams.map((p) => `'${p.name}'`).join(", ")}`,
             span: param.span,
             weight: node.arguments.length + 1,
           });
@@ -121,14 +123,48 @@ export class TypeCheckerCallable implements TypeCheckerType {
         keywordParams.push(found.name);
 
         const checked = check(param.value);
+        const match = found.type.equals(checked);
 
-        if (!found.type.equals(checked)) {
+        if (match) continue;
+
+        if (!found.tag) {
           errorMessages.push({
-            error: `keyword argument ${found.name} expected type ${found.type.asString()}, but got ${checked.asString()}`,
+            error: `keyword argument '${found.name}' expected type ${found.type.asString()}, but got ${checked.asString()}`,
             span: param.span,
             weight: node.arguments.length + 1,
           });
           continue signatureLoop;
+        }
+
+        const isLiteralParam = param.value.kind === "String" || param.value.kind === "Boolean";
+
+        const literalType =
+          param.value.kind === "String"
+            ? TypeCheckerLiteral.string(param.value.value.value)
+            : param.value.kind === "Boolean"
+              ? TypeCheckerLiteral.boolean(param.value.value.value === "true")
+              : checked;
+
+        const matchLiteral = found.type.equals(literalType);
+
+        if (found.tag.type === "string") {
+          if ((!matchLiteral && isLiteralParam) || !(checked instanceof TypeCheckerString)) {
+            errorMessages.push({
+              error: `keyword argument '${found.name}' expected type ${found.type.asString()} | string, but got ${literalType.asString()}`,
+              span: param.span,
+              weight: node.arguments.length + 1,
+            });
+            continue signatureLoop;
+          }
+        } else if (found.tag.type === "boolean") {
+          if ((!matchLiteral && isLiteralParam) || !(checked instanceof TypeCheckerBoolean)) {
+            errorMessages.push({
+              error: `keyword argument '${found.name}' expected type ${found.type.asString()} | boolean, but got ${literalType.asString()}`,
+              span: param.span,
+              weight: node.arguments.length + 1,
+            });
+            continue signatureLoop;
+          }
         }
       }
 

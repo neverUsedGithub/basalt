@@ -16,6 +16,7 @@ import {
   TypeCheckerVoid,
   type TypeCheckerType,
 } from "../typechecker/types";
+import { TypeCheckerUnion } from "../typechecker/types/union";
 
 const CAMEL_CASE_REGEX = /([a-z])([A-Z])/g;
 const SPACE_SEP_REGEX = /([a-zA-Z]) ([a-zA-Z])/g;
@@ -196,25 +197,28 @@ for (const block of actionDump.codeblocks) {
 
         for (const tag of action.tags) {
           const values: TypeCheckerLiteral[] = [];
+          let type: "string" | "boolean" = "string";
 
           if (
             tag.options.length === 2 &&
             tag.options[0].name.toLowerCase() === "true" &&
             tag.options[1].name.toLowerCase() === "false"
           ) {
-            values.push(new TypeCheckerLiteral(true), new TypeCheckerLiteral(false));
+            type = "boolean";
+            values.push(TypeCheckerLiteral.boolean(true), TypeCheckerLiteral.boolean(false));
           } else {
             for (const value of tag.options) {
-              values.push(new TypeCheckerLiteral(camelToSnakeCase(value.name)));
+              values.push(TypeCheckerLiteral.string(value.name));
             }
           }
 
           keywordParams.push({
             name: camelToSnakeCase(tag.name),
-            type: new TypeCheckerAny(),
+            type: new TypeCheckerUnion(values),
             optional: true,
             tag: {
               tag,
+              type,
               values,
             },
           });

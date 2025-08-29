@@ -18,10 +18,12 @@ event player_event::join {
 
   if variable dict_has_key(@line foo, 'hi') {}
 
+  let @line test: string;
+
   all_players {
     player_action::send_message(
       @line emoji, @line player_name, @line message, @line emoji,
-      alignment_mode='centered'
+      alignment_mode='Centered'
     );
   }
 }
