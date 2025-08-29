@@ -560,6 +560,15 @@ export class Parser {
 
     if (this.is(TokenType.KEYWORD) || !this.is(TokenType.DELIMITER, "(")) {
       if (this.mode === "tolerant" && !this.is(TokenType.KEYWORD)) {
+        this.error(
+          {
+            type: "Parser",
+            message: `expected a category`,
+            span: this.current.span,
+          },
+          true,
+        );
+
         return this.make({
           kind: "IfActionStatement",
 
