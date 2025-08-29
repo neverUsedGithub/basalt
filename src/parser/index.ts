@@ -590,6 +590,15 @@ export class Parser {
       if (this.is(TokenType.IDENTIFIER)) {
         action = this.eat(TokenType.IDENTIFIER);
         end = action.span.end;
+      } else {
+        this.error(
+          {
+            type: "Parser",
+            message: `expected an action from category '${category.value}'`,
+            span: this.current.span,
+          },
+          true,
+        );
       }
 
       if (!IF_CATEGORIES.includes(category.value)) {
