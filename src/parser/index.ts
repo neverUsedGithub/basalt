@@ -221,7 +221,7 @@ export class Parser {
       const parameters: ParameterizedTypeNode["parameters"] = [];
 
       this.eat(TokenType.DELIMITER, "[");
-      while (!this.is(TokenType.OPERATOR)) {
+      while (!this.is(TokenType.DELIMITER, "]")) {
         if (parameters.length > 0) this.eat(TokenType.COMMA);
         parameters.push(this.pTypeNode());
       }
