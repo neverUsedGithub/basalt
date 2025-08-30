@@ -336,7 +336,7 @@ export class Parser {
     this.skipNewlines();
 
     while (!this.is(TokenType.DELIMITER, ")")) {
-      if (args.length > 0) this.eat(TokenType.COMMA);
+      if (args.length > 0 || keywordArgs.length > 0) this.eat(TokenType.COMMA);
       this.skipNewlines();
 
       if (this.is(TokenType.IDENTIFIER) && this.isLookahead(TokenType.OPERATOR, "=")) {
