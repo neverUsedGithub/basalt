@@ -53,8 +53,8 @@ export interface BlockNode extends BaseNode<"Block"> {
 }
 
 export interface EventNode extends BaseNode<"Event"> {
-  event: IdentifierNode | NamespaceGetPropertyNode;
-  body: BlockNode;
+  event: IdentifierNode | NamespaceGetPropertyNode | ErrorNode;
+  body: BlockNode | null;
 }
 
 export interface VariableDefinitionNode extends BaseNode<"VariableDefinition"> {

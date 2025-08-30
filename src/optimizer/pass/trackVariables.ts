@@ -48,7 +48,7 @@ export class TrackVariables extends OptimizationPass {
         const parameter = resolved.args.items[slot];
         const argument = block.args.items[slot];
 
-        if (argument.item.id !== "var") continue;
+        if (!argument || argument.item.id !== "var") continue;
 
         let type: "read" | "write" = "read";
 

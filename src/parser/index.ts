@@ -766,22 +766,31 @@ export class Parser {
   private pEvent(): EventNode {
     const start = this.eat(TokenType.KEYWORD, "event");
     const name = this.pExpression();
+    let end = name.span.end;
 
     if (name.kind !== "Identifier" && name.kind !== "NamespaceGetProperty") {
-      this.error({
-        type: "Parser",
-        message: `expected an identifier or a namespace access`,
-        span: name.span,
-      });
+      if (this.mode === "strict" || name.kind !== "ErrorNode")
+        this.error({
+          type: "Parser",
+          message: `expected an identifier or a namespace access`,
+          span: name.span,
+        });
     }
 
-    const block = this.pBlock();
+    let block: BlockNode | null = null;
+    
+    if (this.mode === "strict" || this.is(TokenType.DELIMITER, "{")) {
+      block = this.pBlock();
+      end = block.span.end;
+    } else {
+      this.addEatError(TokenType.DELIMITER, "{");
+    }
 
     return this.make({
       kind: "Event",
       event: name,
       body: block,
-      span: new Span(start.span.start, block.span.end),
+      span: new Span(start.span.start, end),
     });
   }
 

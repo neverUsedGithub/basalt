@@ -4,7 +4,7 @@ fn test(foo: string): void {}
 #   return set_variable::random_value(...values) as T;
 # }
 
-event player_event::join {
+fn death_event(): void {
   let @line player_name = game_values::name;
   let @line message = "died!";
   let @line emoji = "💀";
@@ -17,8 +17,7 @@ event player_event::join {
     @line emoji = "😬";
   }
 
-  if (@line numbers == @line emoji) {
-    player_action::;
+  if (@line numbers) {
     player_action::send_message("Hello, World!");
   }
 
@@ -30,3 +29,10 @@ event player_event::join {
   }
 }
 
+event player_event::join {
+  death_event();
+}
+
+event player_event::death {
+  death_event();
+}

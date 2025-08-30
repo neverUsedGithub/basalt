@@ -168,8 +168,14 @@ export class TypeChecker {
 
       case "Event": {
         const checked = this.check(node.event, scope);
+        if (!(checked instanceof TypeCheckerEvent))
+          this.tryError({
+            type: "Type",
+            message: "expected an event type",
+            span: node.event.span,
+          });
 
-        this.expectType(checked, TypeCheckerEvent, "expected an event type", node.event.span);
+        if (!node.body) return new TypeCheckerError();
         this.check(node.body, scope);
 
         return new TypeCheckerVoid();
