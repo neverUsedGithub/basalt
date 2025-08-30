@@ -40,7 +40,7 @@ async function cli() {
   let rows: DFBlockRow[];
 
   try {
-    const lexer = new Lexer(source);
+    const lexer = new Lexer(source, "strict");
     const parser = new Parser(source, lexer, "strict", null);
     const ast = parser.parse();
 

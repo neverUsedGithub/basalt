@@ -1,5 +1,5 @@
 import type { VariableScope } from "../typechecker";
-import type { SourceFile } from "../shared/source";
+import type { ErrorOptions, SourceFile } from "../shared/source";
 import { Location, Span } from "../shared/span";
 
 export enum TokenType {
@@ -128,14 +128,27 @@ export class Lexer {
 
   private source: string;
   private current: string;
+  private errors: ErrorOptions[] = [];
 
-  constructor(private file: SourceFile) {
+  constructor(
+    private file: SourceFile,
+    private mode: "strict" | "tolerant",
+  ) {
     this.source = file.content;
     this.current = this.source[0];
   }
 
   private location(): Location {
     return new Location(this.line, this.pos - this.lineStart);
+  }
+
+  private tryError(options: ErrorOptions) {
+    if (this.mode === "strict") this.file.error(options);
+    this.errors.push(options);
+  }
+
+  getErrors(): ErrorOptions[] {
+    return this.errors;
   }
 
   private advance() {
@@ -239,11 +252,13 @@ export class Lexer {
       while (!this.isEOF()) {
         if (this.current === opener) break;
         if (this.current === "\n") {
-          this.file.error({
+          this.tryError({
             type: "Lexer",
             message: "unexpected newline inside string",
             span: new Span(this.location(), this.location()),
           });
+
+          break;
         }
 
         if (this.current === "\\") {
@@ -260,25 +275,25 @@ export class Lexer {
             case opener: {
               content += opener;
               this.advance();
-              break;
+              continue;
             }
 
             case "\\": {
               content += "\\";
               this.advance();
-              break;
+              continue;
             }
 
             default: {
-              this.file.error({
+              this.tryError({
                 type: "Lexer",
                 message: `invalid escape code '\\${this.current}'`,
                 span: new Span(this.location(), this.location()),
               });
+
+              this.advance();
             }
           }
-
-          continue;
         }
 
         content += this.current;
@@ -308,11 +323,15 @@ export class Lexer {
       return new Token(TokenType.NUMBER, num, new Span(start, end));
     }
 
-    this.file.error({
+    this.tryError({
       type: "Lexer",
       message: `unexpected character '${this.current}'`,
       span: new Span(this.location(), this.location()),
     });
+
+    this.advance();
+
+    return this.next();
   }
 
   *[Symbol.iterator](): Generator<Token> {
