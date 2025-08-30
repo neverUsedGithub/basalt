@@ -496,11 +496,13 @@ export class TypeChecker {
         const result = lhs.execOperator(node.operator.value as BinaryOperators, rhs);
 
         if (!result) {
-          this.source.error({
+          this.tryError({
             type: "Parser",
             message: `unsupported operands for '${node.operator.value}': '${lhs.asString()}' and '${rhs.asString()}'`,
             span: node.operator.span,
           });
+
+          return new TypeCheckerError();
         }
 
         return result;
