@@ -3,8 +3,8 @@ import type { TypeCheckerType } from "./type";
 
 export class TypeCheckerLiteral implements TypeCheckerType {
   private constructor(
-    private type: "string" | "text" | "number" | "boolean",
-    private value: string | number | boolean,
+    public type: "string" | "text" | "number" | "boolean",
+    public value: string | number | boolean,
   ) {}
 
   static text(value: string) {
