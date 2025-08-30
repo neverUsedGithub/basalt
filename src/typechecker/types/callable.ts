@@ -77,6 +77,18 @@ export class TypeCheckerCallable implements TypeCheckerType {
     return null;
   }
 
+  getAllKeywordArguments(): TypeCheckerCallableKeywordParam[] {
+    const keywordParams: Map<string, TypeCheckerCallableKeywordParam> = new Map();
+
+    for (const signature of this.signatures) {
+      for (const node of signature.keywordParams) {
+        keywordParams.set(node.name, node);
+      }
+    }
+
+    return Array.from(keywordParams.values());
+  }
+
   canCall(
     node: { span: Span; arguments: ExpressionNode[]; keywordArguments: KeywordArgumentNode[] },
     check: (node: ParserNode) => TypeCheckerType,
