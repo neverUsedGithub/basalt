@@ -94,6 +94,14 @@ export class Parser {
     });
   }
 
+  private tryEat(type: TokenType, value?: string) {
+    if (this.mode === "strict" || this.is(type, value)) {
+      this.eat(type, value);
+    } else {
+      this.addEatError(type, value);
+    }
+  }
+
   private unadvance() {
     this.current = this.tokens[--this.pointer];
   }
@@ -529,7 +537,7 @@ export class Parser {
       value = this.pExpression();
     }
 
-    this.eat(TokenType.SEMICOLON);
+    this.tryEat(TokenType.SEMICOLON);
 
     return this.make({
       kind: "VariableDefinition",
@@ -709,18 +717,7 @@ export class Parser {
     if (this.is(TokenType.DELIMITER, "{")) return this.pBlock();
 
     const expr = this.pExpression();
-
-    if (this.mode === "tolerant" && this.current.type === TokenType.NEWLINE) {
-      this.addEatError(TokenType.SEMICOLON);
-
-      return this.make({
-        kind: "ExpressionStatement",
-        expression: expr,
-        span: expr.span,
-      });
-    }
-
-    this.eat(TokenType.SEMICOLON);
+    this.tryEat(TokenType.SEMICOLON);
 
     return this.make({
       kind: "ExpressionStatement",
@@ -778,7 +775,7 @@ export class Parser {
     }
 
     let block: BlockNode | null = null;
-    
+
     if (this.mode === "strict" || this.is(TokenType.DELIMITER, "{")) {
       block = this.pBlock();
       end = block.span.end;
