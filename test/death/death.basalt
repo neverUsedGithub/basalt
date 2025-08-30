@@ -18,6 +18,7 @@ event player_event::join {
   }
 
   if (@line numbers == @line emoji) {
+    player_action::;
     player_action::send_message("Hello, World!");
   }
 

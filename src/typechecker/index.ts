@@ -511,6 +511,8 @@ export class TypeChecker {
       case "IfExpressionStatement": {
         if (!node.expression) return new TypeCheckerError();
         this.check(node.expression, scope);
+        if (!node.block) return new TypeCheckerError();
+        this.check(node.block, scope);
         return new TypeCheckerVoid();
       }
 
