@@ -1,9 +1,11 @@
 import type { BinaryOperators } from "../../lexer";
 import { TypeCheckerBoolean } from "./boolean";
+import type { TypeCheckerIterable } from "./iterable";
+import { TypeCheckerString } from "./string";
 import type { TypeCheckerType } from "./type";
 import { TypeCheckerVoid } from "./void";
 
-export class TypeCheckerDict implements TypeCheckerType {
+export class TypeCheckerDict implements TypeCheckerType, TypeCheckerIterable {
   private valueType: TypeCheckerType = new TypeCheckerVoid();
 
   constructor() {}
@@ -30,5 +32,9 @@ export class TypeCheckerDict implements TypeCheckerType {
   execOperator(operator: BinaryOperators, rhs: TypeCheckerType): TypeCheckerType | null {
     if (operator === "==" || operator === "!=") return new TypeCheckerBoolean();
     return null;
+  }
+
+  getIteratePattern(): TypeCheckerType[] {
+    return [new TypeCheckerString(), this.valueType];
   }
 }

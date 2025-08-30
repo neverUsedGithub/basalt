@@ -164,6 +164,7 @@ export interface ForStatementNode extends BaseNode<"ForStatement"> {
   type: "in" | "to";
   pattern: VariableNode[];
   expression: ExpressionNode;
+  block: BlockNode;
 }
 
 export interface ErrorNode extends BaseNode<"ErrorNode"> {}
@@ -188,7 +189,8 @@ export type StatementNode =
   | IfExpressionStatementNode
   | IfActionStatementNode
   | FunctionDefinitionNode
-  | TargetStatementNode;
+  | TargetStatementNode
+  | ForStatementNode;
 
 export type ExpressionNode =
   | IdentifierNode

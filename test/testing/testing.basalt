@@ -1,23 +1,23 @@
 
 event player_event::command {
   let @line sender = game_values::name;
-  let @line players = game_value::player_names as list[text];
+  let @line players = game_values::plot_player_uuids as list[string];
 
-  for @line player in game_value::player_names {
+  for @line name in @line players {
     selection {
-      select_object::players_by_name(@line player);
-      player_action::send_message("Hello from", sender);
+      select_object::player_name(@line name);
+      player_action::send_message("Hello from", @line sender);
       select_object::reset();
     }
   }
 }
 
 event player_event::join {
-  forever {
-    while player is_sneaking() {
-      player_action::action_bar("sneaker");
-    }
-    
-    control::wait(1);
-  }
+  # repeat forever {
+  #   while player is_sneaking() {
+  #     player_action::action_bar("sneaker");
+  #   }
+  #   
+  #   control::wait(1);
+  # }
 }

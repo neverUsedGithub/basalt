@@ -29,6 +29,7 @@ import type {
   ErrorNode,
   ParserNode,
   StyledTextNode,
+  ForStatementNode,
 } from "./nodes";
 
 const OPERATOR_PRECEDENCE = {
@@ -709,9 +710,38 @@ export class Parser {
     });
   }
 
+  private pForStatement(): ForStatementNode {
+    const start = this.eat(TokenType.KEYWORD, "for").span.start;
+    const pattern: VariableNode[] = [];
+
+    do {
+      if (pattern.length > 0) this.eat(TokenType.COMMA);
+      pattern.push(this.pVariable());
+
+      if (this.is(TokenType.KEYWORD, "in") || this.is(TokenType.KEYWORD, "to")) break;
+    } while (true);
+
+    const type = this.is(TokenType.KEYWORD, "in")
+      ? this.eat(TokenType.KEYWORD, "in")
+      : this.eat(TokenType.KEYWORD, "to");
+
+    const expression = this.pExpression();
+    const block = this.pBlock();
+
+    return this.make({
+      kind: "ForStatement",
+      type: type.value as "in" | "to",
+      expression,
+      pattern,
+      block,
+      span: new Span(start, block.span.end)
+    });
+  }
+
   private pStatement(): StatementNode {
     if (this.is(TokenType.KEYWORD, "return")) return this.pReturnStatement();
     if (this.is(TokenType.KEYWORD, "let")) return this.pVariableDefinition();
+    if (this.is(TokenType.KEYWORD, "for")) return this.pForStatement();
     if (this.is(TokenType.KEYWORD, "if")) return this.pIfStatement();
     if (this.is(TokenType.TARGET)) return this.pTargetStatement();
     if (this.is(TokenType.DELIMITER, "{")) return this.pBlock();

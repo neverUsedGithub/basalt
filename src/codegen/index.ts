@@ -18,6 +18,7 @@ import {
   TypeCheckerDict,
   TypeCheckerEvent,
   TypeCheckerGameValues,
+  TypeCheckerList,
   TypeCheckerLiteral,
   TypeCheckerNamespace,
   TypeCheckerNumber,
@@ -162,7 +163,7 @@ export class CodeGen {
       }
 
       case "Boolean": {
-        return { id: "num", data: { name: node.value.value === "true" ? "1" : "0" } }
+        return { id: "num", data: { name: node.value.value === "true" ? "1" : "0" } };
       }
 
       case "ReferenceExpression": {
@@ -695,6 +696,50 @@ export class CodeGen {
         this.blocks.pushTarget(TARGET_TO_DF[node.target.value as TargetTokens]);
         this.generate(node.expression, node);
         this.blocks.popTarget();
+
+        return;
+      }
+
+      case "ForStatement": {
+        const items: DFItem[] = [];
+        let action: string = "Multiple";
+
+        if (node.type === "in") {
+          const expr = this.checker.getType(node.expression)!;
+
+          if (expr instanceof TypeCheckerList) {
+            action = "ForEach";
+          } else if (expr instanceof TypeCheckerDict) {
+            action = "ForEachEntry";
+          }
+        }
+
+        for (const variable of node.pattern) {
+          items.push(this.generateItem(variable));
+        }
+
+        items.push(this.generateItem(node.expression));
+
+        this.blocks.add({
+          id: "block",
+          block: "repeat",
+          action: action,
+          args: { items: items.map((it, i) => ({ item: it, slot: i })) },
+        });
+
+        this.blocks.add({
+          id: "bracket",
+          type: "repeat",
+          direct: "open",
+        });
+
+        this.generate(node.block, node);
+
+        this.blocks.add({
+          id: "bracket",
+          type: "repeat",
+          direct: "close",
+        });
 
         return;
       }

@@ -6,10 +6,6 @@ fn death_message(): void {
   let @line numbers: dict[number];
   let @line other: list[list[list[list[number]]]];
 
-  player_action::send_message(
-    alignment_mode='Regular', alignment_mode='Regular', inherit_styles=true
-  );
-
   if player is_sneaking() {
     @line message = "died while sneaking!";
     @line emoji = "😬";

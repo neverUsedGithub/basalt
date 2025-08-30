@@ -563,6 +563,63 @@ export class TypeChecker {
         return new TypeCheckerVoid();
       }
 
+      case "ForStatement": {
+        const expression = this.check(node.expression, scope);
+        let patternTypes: TypeCheckerError[];
+
+        if (node.type === "to") {
+          if (!(expression instanceof TypeCheckerNumber)) {
+            this.tryError({
+              type: "Type",
+              message: `expected a number value`,
+              span: node.expression.span,
+            });
+          }
+
+          patternTypes = [new TypeCheckerNumber()];
+        } else {
+          if (!(expression instanceof TypeCheckerList) && !(expression instanceof TypeCheckerDict)) {
+            this.tryError({
+              type: "Type",
+              message: `type '${expression.asString()}' cannot be iterated`,
+              span: node.expression.span,
+            });
+
+            return new TypeCheckerError();
+          }
+
+          patternTypes = expression.getIteratePattern();
+        }
+
+        if (patternTypes.length !== node.pattern.length) {
+          this.tryError({
+            type: "Type",
+            message: `this expression provides ${patternTypes.length} values, but ${node.pattern.length} were specified`,
+            span: node.expression.span,
+          });
+
+          return new TypeCheckerError();
+        }
+
+        for (let i = 0; i < patternTypes.length; i++) {
+          const result = scope.getSymbol(node.pattern[i].name.value, node.pattern[i].scope.value as VariableScope);
+
+          if (result && !result.equals(patternTypes[i])) {
+            this.tryError({
+              type: "Type",
+              message: `value of type '${patternTypes[i].asString()}' cannot be assigned to a variable of type '${result.asString()}'`,
+              span: node.pattern[i].span,
+            });
+          } else if (result === null) {
+            scope.addSymbol(node.pattern[i].name.value, patternTypes[i], node.pattern[i].scope.value as VariableScope);
+          }
+        }
+
+        this.check(node.block, scope);
+
+        return new TypeCheckerVoid();
+      }
+
       default: {
         this.source.error({
           type: "Type",

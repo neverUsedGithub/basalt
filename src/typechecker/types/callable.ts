@@ -120,7 +120,7 @@ export class TypeCheckerCallable implements TypeCheckerType {
           const prefix = sig.variadic && i >= sig.params.length ? "..." : "";
 
           errorMessages.push({
-            error: `${prefix}${name} must be of type ${paramType.asString()}, got ${checked.asString()}`,
+            error: `'${prefix}${name}' must be of type ${paramType.asString()}, got ${checked.asString()}`,
             span: node.arguments[i].span,
             weight: i,
           });
