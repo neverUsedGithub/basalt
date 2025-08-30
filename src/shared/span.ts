@@ -7,6 +7,22 @@ export class Location {
   sub(lines: number, cols: number) {
     return new Location(this.line - lines, this.col - cols);
   }
+
+  lessThan(location: Location) {
+    return (this.line < location.line) || (this.line === location.line && this.col < location.col);
+  }
+  
+  lessThanEqual(location: Location) {
+    return (this.line < location.line) || (this.line === location.line && this.col <= location.col);
+  }
+
+  moreThan(location: Location) {
+    return (this.line > location.line) || (this.line === location.line && this.col > location.col);
+  }
+
+  moreThanEqual(location: Location) {
+    return (this.line > location.line) || (this.line === location.line && this.col >= location.col);
+  }
 }
 
 export class Span {
@@ -29,7 +45,7 @@ export class Span {
   lessThan(span: Span) {
     return (this.end.line < span.start.line) || (this.end.line === span.start.line && this.end.col < span.start.col);
   }
-  
+
   lessThanEqual(span: Span) {
     return (this.end.line < span.start.line) || (this.end.line === span.start.line && this.end.col <= span.start.col);
   }
