@@ -1,13 +1,15 @@
 
 event player_event::command {
-  let @line sender = game_values::name;
-  let @line players = game_values::plot_player_uuids as list[string];
+  if game command_equals('@greet') {
+    let @line sender = game_values::name;
+    let @line players = game_values::plot_player_uuids as list[string];
 
-  for @line name in @line players {
-    selection {
-      select_object::player_name(@line name);
-      player_action::send_message("Hello from", @line sender);
-      select_object::reset();
+    for @line uuid in @line players {
+      selection {
+        select_object::player_name(@line uuid);
+        player_action::send_message("Hello from", @line sender);
+        select_object::reset();
+      }
     }
   }
 }

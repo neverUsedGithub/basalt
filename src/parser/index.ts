@@ -1,6 +1,6 @@
 import { Token, TokenType, type Lexer } from "../lexer";
 import { SourceError, type ErrorOptions, type SourceFile } from "../shared/source";
-import { Span } from "../shared/span";
+import { Location, Span } from "../shared/span";
 import type {
   BlockNode,
   CallExpressionNode,
@@ -593,12 +593,10 @@ export class Parser {
 
       let category: Token | null = this.eat(TokenType.KEYWORD);
       let action: Token | null = null;
-
-      let end = category.span.end;
+      let end: Location | null = null;
 
       if (this.is(TokenType.IDENTIFIER)) {
         action = this.eat(TokenType.IDENTIFIER);
-        end = action.span.end;
       } else {
         this.error(
           {
@@ -629,8 +627,7 @@ export class Parser {
       if (this.mode === "strict" || this.is(TokenType.DELIMITER, "(")) {
         this.eat(TokenType.DELIMITER, "(");
         const fnCall = this.pFunctionCall();
-        end = this.eat(TokenType.DELIMITER, ")").span.end;
-
+        
         args = fnCall.args;
         keywordArgs = fnCall.keywordArgs;
       } else {
@@ -653,7 +650,7 @@ export class Parser {
         arguments: args,
         keywordArguments: keywordArgs,
         block,
-        span: new Span(start, end),
+        span: new Span(start, end ?? this.current.span.end),
       });
     }
 
