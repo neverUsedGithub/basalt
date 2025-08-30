@@ -17,20 +17,14 @@ event player_event::join {
     @line emoji = "😬";
   }
 
-  let @line test: string;
+  if (@line numbers) {
+    player_action::send_message("Hello, World!");
+  }
 
   all_players {
     player_action::send_message(
       @line emoji, @line player_name, @line message, @line emoji,
       alignment_mode='Centered'
-    );
-
-    player_action::send_message(
-      @line emoji, @line player_name, @line message, @line emoji,
-      
-      alignment_mode='Centered',
-      text_value_merging='Add spaces',
-      inherit_styles=true
     );
   }
 }

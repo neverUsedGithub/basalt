@@ -161,6 +161,10 @@ export class CodeGen {
         return { id: "comp", data: { name: node.value.value } };
       }
 
+      case "Boolean": {
+        return { id: "num", data: { name: node.value.value === "true" ? "1" : "0" } }
+      }
+
       case "ReferenceExpression": {
         return {
           id: "var",
@@ -632,21 +636,35 @@ export class CodeGen {
       }
 
       case "IfExpressionStatement": {
-        assertNode<"BinaryExpression">(node.expression);
+        assertNode<"BinaryExpression" | "VariableNode" | "Identifier">(node.expression!);
 
-        const opString = node.expression.operator.value === "==" ? "=" : node.expression.operator.value;
+        if (node.expression.kind === "BinaryExpression") {
+          const opString = node.expression.operator.value === "==" ? "=" : node.expression.operator.value;
 
-        this.blocks.add({
-          id: "block",
-          block: "if_var",
-          action: opString,
-          args: {
-            items: [
-              { item: this.generateItem(node.expression.lhs), slot: 0 },
-              { item: this.generateItem(node.expression.rhs), slot: 1 },
-            ],
-          },
-        });
+          this.blocks.add({
+            id: "block",
+            block: "if_var",
+            action: opString,
+            args: {
+              items: [
+                { item: this.generateItem(node.expression.lhs), slot: 0 },
+                { item: this.generateItem(node.expression.rhs), slot: 1 },
+              ],
+            },
+          });
+        } else if (node.expression.kind === "VariableNode" || node.expression.kind === "Identifier") {
+          this.blocks.add({
+            id: "block",
+            block: "if_var",
+            action: "!=",
+            args: {
+              items: [
+                { item: this.generateItem(node.expression), slot: 0 },
+                { item: { id: "num", data: { name: "0" } }, slot: 1 },
+              ],
+            },
+          });
+        }
 
         this.blocks.add({
           id: "bracket",
@@ -654,7 +672,7 @@ export class CodeGen {
           direct: "open",
         });
 
-        this.generate(node.block, node);
+        this.generate(node.block!, node);
 
         this.blocks.add({
           id: "bracket",

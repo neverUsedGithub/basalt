@@ -17,6 +17,7 @@ export type CodeClientMode = "play" | "dev" | "build";
 
 export enum CodeClientState {
   UNAUTHED,
+  TOKEN_MISSING,
   TOKEN_INVALID,
   AUTHED,
 }
@@ -26,6 +27,7 @@ export class CodeClientConnection extends EventEmitter<CodeClientEvents> {
   private token: string | null;
   private ws: WebSocket;
 
+  private tokenSavePromise: Promise<unknown> | null = null;
   private activeTransaction: (() => void) | null = null;
 
   constructor(private scopes: CodeClientScope[]) {
@@ -42,7 +44,10 @@ export class CodeClientConnection extends EventEmitter<CodeClientEvents> {
     this.on("connect", async () => {
       this.token = await this.getSavedToken();
       if (this.token) this.ws.send(`token ${this.token}`);
-      else this.ws.send(`scopes ${this.scopes.join(" ")}`);
+      else {
+        this.codeClientState = CodeClientState.TOKEN_MISSING;
+        this.ws.send(`scopes ${this.scopes.join(" ")}`);
+      }
     });
   }
 
@@ -60,7 +65,8 @@ export class CodeClientConnection extends EventEmitter<CodeClientEvents> {
     this.ws.send(`mode ${mode}`);
   }
 
-  close() {
+  async close() {
+    if (this.tokenSavePromise) await this.tokenSavePromise;
     this.ws.close();
   }
 
@@ -73,8 +79,8 @@ export class CodeClientConnection extends EventEmitter<CodeClientEvents> {
     return await TEMPORARY_TOKEN_FILE.text().catch(() => null);
   }
 
-  private async setSavedToken(token: string): Promise<void> {
-    await Bun.write(TEMPORARY_TOKEN_FILE, token);
+  private setSavedToken(token: string): void {
+    this.tokenSavePromise = Bun.write(TEMPORARY_TOKEN_FILE, token);
   }
 
   private async onMessage(data: string) {
@@ -85,12 +91,12 @@ export class CodeClientConnection extends EventEmitter<CodeClientEvents> {
       this.codeClientState = CodeClientState.AUTHED;
 
       this.emit("auth");
-      if (state === CodeClientState.TOKEN_INVALID) this.ws.send("token");
+      if (state === CodeClientState.TOKEN_INVALID || state === CodeClientState.TOKEN_MISSING) this.ws.send("token");
     } else if (command === "invalid" && args[0] === "token") {
       this.codeClientState = CodeClientState.TOKEN_INVALID;
       this.ws.send(`scopes ${this.scopes.join(" ")}`);
     } else if (command === "token") {
-      this.setSavedToken(args[0]);
+      await this.setSavedToken(args[0]);
     } else if (command === "place" && args[0] === "done") {
       if (this.activeTransaction) this.activeTransaction();
     }

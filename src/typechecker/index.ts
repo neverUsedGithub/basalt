@@ -357,6 +357,9 @@ export class TypeChecker {
 
           case "text":
             return new TypeCheckerStyledText();
+
+          case "boolean":
+            return new TypeCheckerBoolean();
         }
 
         this.source.error({
@@ -504,14 +507,17 @@ export class TypeChecker {
       }
 
       case "IfExpressionStatement": {
+        if (!node.expression) return new TypeCheckerError();
         const expr = this.check(node.expression, scope);
 
         if (!(expr instanceof TypeCheckerBoolean)) {
-          this.source.error({
+          this.tryError({
             type: "Type",
             message: `expected a boolean value, got '${expr.asString()}'`,
             span: node.expression.span,
           });
+
+          return new TypeCheckerError();
         }
 
         return new TypeCheckerVoid();

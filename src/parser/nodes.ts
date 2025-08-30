@@ -131,8 +131,8 @@ export interface ReturnStatementNode extends BaseNode<"ReturnStatement"> {
 }
 
 export interface IfExpressionStatementNode extends BaseNode<"IfExpressionStatement"> {
-  expression: ExpressionNode;
-  block: BlockNode;
+  expression: ExpressionNode | null;
+  block: BlockNode | null;
 }
 
 export interface IfActionStatementNode extends BaseNode<"IfActionStatement"> {
@@ -156,6 +156,14 @@ export interface TargetExpressionNode extends BaseNode<"TargetExpression"> {
 export interface TypeCastNode extends BaseNode<"TypeCast"> {
   expression: ExpressionNode;
   type: TypeNode;
+}
+
+export interface RepeatStatementNode extends BaseNode<"RepeatStatement"> {}
+
+export interface ForStatementNode extends BaseNode<"ForStatement"> {
+  type: "in" | "to";
+  pattern: VariableNode[];
+  expression: ExpressionNode;
 }
 
 export interface ErrorNode extends BaseNode<"ErrorNode"> {}

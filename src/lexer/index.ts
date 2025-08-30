@@ -49,6 +49,10 @@ const KEYWORDS = [
   "entity",
   "game",
   "variable",
+  "repeat",
+  "for",
+  "in",
+  "to"
 ];
 const TARGETS = [
   "default",
@@ -66,7 +70,7 @@ const TARGETS = [
 export type TargetTokens = (typeof TARGETS)[number];
 
 const VAR_SCOPES: VariableScope[] = ["@global", "@line", "@saved", "@thread"];
-const TYPENAMES = ["void", "string", "number", "dict", "list", "any", "text"];
+const TYPENAMES = ["void", "string", "number", "dict", "list", "any", "text", "boolean"];
 const SKIP_CHARACTERS = ["\r", "\t", " "];
 
 interface TokenTree {

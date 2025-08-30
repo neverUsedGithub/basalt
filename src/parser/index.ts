@@ -563,7 +563,7 @@ export class Parser {
         this.error(
           {
             type: "Parser",
-            message: `expected a category`,
+            message: `expected a category or (`,
             span: this.current.span,
           },
           true,
@@ -651,24 +651,41 @@ export class Parser {
     this.eat(TokenType.DELIMITER, "(");
 
     const expression = this.pExpression();
+    let end = expression.span.end;
 
     if (expression.kind !== "BinaryExpression" || !CONDITION_OPERATORS.includes(expression.operator.value)) {
-      this.error({
-        type: "Parser",
-        message: `expected a comparison expression`,
-        span: expression.span,
-      });
+      if (expression.kind !== "Identifier" && expression.kind !== "VariableNode") {
+        this.error(
+          {
+            type: "Parser",
+            message: `expected a comparison expression`,
+            span: expression.span,
+          },
+          true,
+        );
+      }
     }
 
-    this.eat(TokenType.DELIMITER, ")");
+    if (this.mode === "tolerant" && !this.is(TokenType.DELIMITER, ")")) {
+      this.addEatError(TokenType.DELIMITER, ")");
+    } else {
+      end = this.eat(TokenType.DELIMITER, ")").span.end;
+    }
 
-    const block = this.pBlock();
+    let block: BlockNode | null = null;
+
+    if (this.mode === "strict" || this.is(TokenType.DELIMITER, "{")) {
+      block = this.pBlock();
+      end = block.span.end;
+    } else {
+      this.addEatError(TokenType.DELIMITER, "{");
+    }
 
     return this.make({
       kind: "IfExpressionStatement",
       expression,
       block,
-      span: new Span(start, block.span.end),
+      span: new Span(start, end),
     });
   }
 

@@ -165,6 +165,7 @@ function parseOrArray(args: ArgumentsItem[]) {
   return { array, isVariadic };
 }
 
+const OPERATOR_ACTIONS = ["=", "!=", "<", "<=", ">", ">="];
 const conditions: Record<string, Map<string, TypeCheckerAction>> = {};
 
 for (const block of actionDump.codeblocks) {
@@ -186,6 +187,7 @@ for (const block of actionDump.codeblocks) {
 
     for (const action of blockActions[blockName]) {
       if (action.name === "dynamic") continue;
+      if (block.name === "if_var" && OPERATOR_ACTIONS.includes(action.name)) continue;
 
       const actionName = camelToSnakeCase(action.name);
 

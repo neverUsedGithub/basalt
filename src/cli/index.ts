@@ -86,7 +86,7 @@ async function cli() {
   await Bun.sleep(400);
   codeClient.setMode("play");
   await Bun.sleep(200);
-  codeClient.close();
+  await codeClient.close();
 }
 
 cli();
