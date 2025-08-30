@@ -32,10 +32,10 @@ import type {
 } from "./nodes";
 
 const OPERATOR_PRECEDENCE = {
-  as: 13,
-  "::": 12,
-  call: 11,
-  prop: 10,
+  "::": 13,
+  call: 12,
+  prop: 11,
+  as: 10,
   "+=": 9,
   "-=": 9,
   "*=": 9,

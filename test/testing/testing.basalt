@@ -1,6 +1,7 @@
 
 event player_event::command {
   let @line sender = game_values::name;
+  let @line players = game_value::player_names as list[text];
 
   for @line player in game_value::player_names {
     selection {
@@ -9,8 +10,6 @@ event player_event::command {
       select_object::reset();
     }
   }
-
-  repeat on_path() {}
 }
 
 event player_event::join {

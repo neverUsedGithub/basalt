@@ -9,7 +9,8 @@ event player_event::join {
   let @line message = "died!";
   let @line emoji = "💀";
 
-  let @line foo: dict[any];
+  let @line numbers: dict[number];
+  let @line other: list[list[list[list[number]]]];
 
   if player is_sneaking() {
     @line message = "died while sneaking!";
@@ -27,8 +28,9 @@ event player_event::join {
     player_action::send_message(
       @line emoji, @line player_name, @line message, @line emoji,
       
-      alignment_mode='Regular',
-      
+      alignment_mode='Centered',
+      text_value_merging='Add spaces',
+      inherit_styles=true
     );
   }
 }
