@@ -508,18 +508,7 @@ export class TypeChecker {
 
       case "IfExpressionStatement": {
         if (!node.expression) return new TypeCheckerError();
-        const expr = this.check(node.expression, scope);
-
-        if (!(expr instanceof TypeCheckerBoolean)) {
-          this.tryError({
-            type: "Type",
-            message: `expected a boolean value, got '${expr.asString()}'`,
-            span: node.expression.span,
-          });
-
-          return new TypeCheckerError();
-        }
-
+        this.check(node.expression, scope);
         return new TypeCheckerVoid();
       }
 

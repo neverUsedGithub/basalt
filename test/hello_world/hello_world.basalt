@@ -15,7 +15,7 @@ event player_event::join {
   player_action::send_message(
     "Join Count: ", @line join_count_str,
 
-    alignment_mode="centered",
-    text_value_merging="add_spaces"
+    alignment_mode='Centered',
+    text_value_merging='Add spaces'
   );
 }
