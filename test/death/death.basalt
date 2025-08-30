@@ -16,9 +16,6 @@ event player_event::join {
     @line emoji = "😬";
   }
 
-  if variable dict_has_key(@line foo, 'hi') {};
-  if player () {};
-
   let @line test: string;
 
   all_players {
@@ -29,7 +26,7 @@ event player_event::join {
 
     player_action::send_message(
       @line emoji, @line player_name, @line message, @line emoji,
-      alignment_mode=@line test
+      alignment_mode='Reg'
     );
   }
 }

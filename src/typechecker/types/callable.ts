@@ -67,6 +67,16 @@ export class TypeCheckerCallable implements TypeCheckerType {
     return null;
   }
 
+  findKeywordParameter(name: string): TypeCheckerCallableKeywordParam | null {
+    for (const sig of this.signatures) {
+      for (const node of sig.keywordParams) {
+        if (node.name === name) return node;
+      }
+    }
+
+    return null;
+  }
+
   canCall(
     node: { span: Span; arguments: ExpressionNode[]; keywordArguments: KeywordArgumentNode[] },
     check: (node: ParserNode) => TypeCheckerType,
