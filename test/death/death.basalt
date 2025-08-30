@@ -6,6 +6,8 @@ fn death_message(): void {
   let @line numbers: dict[number];
   let @line other: list[list[list[list[number]]]];
 
+  player_action::send_message(alignment_mode=);
+
   if player is_sneaking() {
     @line message = "died while sneaking!";
     @line emoji = "😬";
@@ -16,8 +18,6 @@ fn death_message(): void {
   }
 
   all_players {
-    let @line test = game_values;
-
     player_action::send_message(
       @line emoji, @line player_name, @line message, @line emoji,
       alignment_mode='Centered'

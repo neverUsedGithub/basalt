@@ -25,4 +25,20 @@ export class Span {
 
     return location.line > this.start.line && location.line < this.end.line;
   }
+
+  lessThan(span: Span) {
+    return (this.end.line < span.start.line) || (this.end.line === span.start.line && this.end.col < span.start.col);
+  }
+  
+  lessThanEqual(span: Span) {
+    return (this.end.line < span.start.line) || (this.end.line === span.start.line && this.end.col <= span.start.col);
+  }
+
+  moreThan(span: Span) {
+    return (this.start.line > span.end.line) || (this.start.line === span.end.line && this.start.col > span.end.col);
+  }
+
+  moreThanEqual(span: Span) {
+    return (this.start.line > span.end.line) || (this.start.line === span.end.line && this.start.col >= span.end.col);
+  }
 }
