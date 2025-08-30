@@ -9,19 +9,19 @@ export class Location {
   }
 
   lessThan(location: Location) {
-    return (this.line < location.line) || (this.line === location.line && this.col < location.col);
+    return this.line < location.line || (this.line === location.line && this.col < location.col);
   }
-  
+
   lessThanEqual(location: Location) {
-    return (this.line < location.line) || (this.line === location.line && this.col <= location.col);
+    return this.line < location.line || (this.line === location.line && this.col <= location.col);
   }
 
   moreThan(location: Location) {
-    return (this.line > location.line) || (this.line === location.line && this.col > location.col);
+    return this.line > location.line || (this.line === location.line && this.col > location.col);
   }
 
   moreThanEqual(location: Location) {
-    return (this.line > location.line) || (this.line === location.line && this.col >= location.col);
+    return this.line > location.line || (this.line === location.line && this.col >= location.col);
   }
 }
 
@@ -36,6 +36,8 @@ export class Span {
   }
 
   contains(location: Location): boolean {
+    if (location.line === this.start.line && location.line === this.end.line)
+      return location.col >= this.start.col && location.col <= this.end.col;
     if (location.line === this.start.line) return location.col >= this.start.col;
     if (location.line === this.end.line) return location.col <= this.end.col;
 
@@ -43,18 +45,18 @@ export class Span {
   }
 
   lessThan(span: Span) {
-    return (this.end.line < span.start.line) || (this.end.line === span.start.line && this.end.col < span.start.col);
+    return this.end.line < span.start.line || (this.end.line === span.start.line && this.end.col < span.start.col);
   }
 
   lessThanEqual(span: Span) {
-    return (this.end.line < span.start.line) || (this.end.line === span.start.line && this.end.col <= span.start.col);
+    return this.end.line < span.start.line || (this.end.line === span.start.line && this.end.col <= span.start.col);
   }
 
   moreThan(span: Span) {
-    return (this.start.line > span.end.line) || (this.start.line === span.end.line && this.start.col > span.end.col);
+    return this.start.line > span.end.line || (this.start.line === span.end.line && this.start.col > span.end.col);
   }
 
   moreThanEqual(span: Span) {
-    return (this.start.line > span.end.line) || (this.start.line === span.end.line && this.start.col >= span.end.col);
+    return this.start.line > span.end.line || (this.start.line === span.end.line && this.start.col >= span.end.col);
   }
 }
