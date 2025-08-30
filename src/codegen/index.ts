@@ -192,10 +192,9 @@ export class CodeGen {
         } as const;
 
         if (expr instanceof TypeCheckerAction) {
-          const res = expr.canCall(node, (node) => this.checker.getType(node)!);
-          if (!res.ok) throw new Error("unreachable");
+          const meta = this.checker.getMeta(node);
 
-          if (res.signature.return instanceof TypeCheckerVoid)
+          if (!meta || meta.kind !== "FunctionCall" || !meta.implicitVariable)
             this.source.error({
               type: "CodeGen",
               message: "this action cannot be used here",
@@ -205,7 +204,7 @@ export class CodeGen {
           const tempName = this.nextTempVariable();
           const tempVar = { id: "var", data: { name: tempName, scope: "line" } } as const;
 
-          this.generateAction(res.signature, node.arguments, node.keywordArguments, expr, [tempVar]);
+          this.generateAction(expr.signature, node.arguments, node.keywordArguments, expr, [tempVar]);
           return tempVar;
         }
 
@@ -387,7 +386,7 @@ export class CodeGen {
           });
         }
 
-        for (const body of node.body.body) this.generate(body, node);
+        for (const body of node.body!.body) this.generate(body, node);
 
         this.blocks.end();
         break;
@@ -406,7 +405,7 @@ export class CodeGen {
           const res = expr.canCall(node, (node) => this.checker.getType(node)!);
           if (!res.ok) throw new Error("unreachable");
 
-          this.generateAction(res.signature, node.arguments, node.keywordArguments, expr);
+          this.generateAction(expr.signature, node.arguments, node.keywordArguments, expr);
         } else if (expr instanceof TypeCheckerCallable) {
           const args = node.arguments.map((arg) => this.generateItem(arg));
 
@@ -617,7 +616,7 @@ export class CodeGen {
         const res = type.canCall(node, (node) => this.checker.getType(node)!);
         if (!res.ok) throw new Error("unreachable");
 
-        this.generateAction(res.signature, node.arguments, node.keywordArguments, type);
+        this.generateAction(type.signature, node.arguments, node.keywordArguments, type);
 
         this.blocks.add({
           id: "bracket",
@@ -740,6 +739,12 @@ export class CodeGen {
           type: "repeat",
           direct: "close",
         });
+
+        return;
+      }
+
+      case "TypeCast": {
+        this.generate(node.expression, node);
 
         return;
       }

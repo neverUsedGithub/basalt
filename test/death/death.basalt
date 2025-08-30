@@ -15,8 +15,6 @@ fn death_message(): void {
     player_action::send_message("Hello, World!");
   }
 
-  if game 
-
   all_players {
     player_action::send_message(
       @line emoji, @line player_name, @line message, @line emoji,

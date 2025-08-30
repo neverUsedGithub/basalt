@@ -1,5 +1,5 @@
 import type { BinaryOperators } from "../lexer";
-import type { ParserNode, ProgramNode } from "../parser/nodes";
+import type { AssignmentExpressionNode, ParserNode, ProgramNode, VariableDefinitionNode } from "../parser/nodes";
 import type { ErrorOptions, SourceFile } from "../shared/source";
 import { Span } from "../shared/span";
 import * as std from "../standard";
@@ -19,6 +19,7 @@ import {
   TypeCheckerStyledText,
   TypeCheckerError,
 } from "./types";
+import type { TypeCheckerCallableParameter } from "./types/callable";
 
 export type VariableScope = "@global" | "@saved" | "@thread" | "@line";
 
@@ -95,8 +96,17 @@ export class TypeCheckerFunctionScope extends TypeCheckerScope {
   }
 }
 
+type CheckContext =
+  | { kind: "VariableDefinition"; node: VariableDefinitionNode }
+  | { kind: "VariableAssignment"; node: AssignmentExpressionNode }
+  | null;
+
+export type TypeCheckerMeta = { kind: "FunctionCall"; implicitVariable: boolean };
+
 export class TypeChecker {
   private topScope: TypeCheckerScope;
+
+  private metaMap: Map<ParserNode, TypeCheckerMeta> = new Map();
   private typeMap: Map<ParserNode, TypeCheckerType> = new Map();
   private scopeMap: Map<ParserNode, TypeCheckerScope> = new Map();
 
@@ -118,6 +128,10 @@ export class TypeChecker {
 
   getType(node: ParserNode): TypeCheckerType | null {
     return this.typeMap.get(node) ?? null;
+  }
+
+  getMeta(node: ParserNode): TypeCheckerMeta | null {
+    return this.metaMap.get(node) ?? null;
   }
 
   getScope(node: ParserNode): TypeCheckerScope | null {
@@ -154,20 +168,20 @@ export class TypeChecker {
     }
   }
 
-  private checkNode(node: ParserNode, scope: TypeCheckerScope): TypeCheckerType {
+  private checkNode(node: ParserNode, scope: TypeCheckerScope, context: CheckContext): TypeCheckerType {
     switch (node.kind) {
       case "ErrorNode": {
         return new TypeCheckerError();
       }
 
       case "Program": {
-        for (const child of node.body) this.check(child, scope);
+        for (const child of node.body) this.check(child, scope, context);
 
         return new TypeCheckerVoid();
       }
 
       case "Event": {
-        const checked = this.check(node.event, scope);
+        const checked = this.check(node.event, scope, context);
         if (!(checked instanceof TypeCheckerEvent))
           this.tryError({
             type: "Type",
@@ -176,7 +190,7 @@ export class TypeChecker {
           });
 
         if (!node.body) return new TypeCheckerError();
-        this.check(node.body, scope);
+        this.check(node.body, scope, context);
 
         return new TypeCheckerVoid();
       }
@@ -223,13 +237,13 @@ export class TypeChecker {
 
       case "Block": {
         const inner = new TypeCheckerScope(TypeCheckerScopeType.BLOCK, scope, node.span);
-        for (const child of node.body) this.check(child, inner);
+        for (const child of node.body) this.check(child, inner, context);
 
         return new TypeCheckerVoid();
       }
 
       case "NamespaceGetProperty": {
-        const namesp = this.check(node.namespace, scope);
+        const namesp = this.check(node.namespace, scope, context);
         this.expectType(namesp, TypeCheckerNamespace, "expected a namespace", node.namespace.span);
         if (node.property.kind === "ErrorNode") return new TypeCheckerError();
 
@@ -282,8 +296,8 @@ export class TypeChecker {
       }
 
       case "VariableDefinition": {
-        const explicitType = node.type ? this.check(node.type, scope) : null;
-        const valueType = node.value ? this.check(node.value, scope) : null;
+        const explicitType = node.type ? this.check(node.type, scope, context) : null;
+        const valueType = node.value ? this.check(node.value, scope, { kind: "VariableDefinition", node }) : null;
 
         if (explicitType && valueType && !(valueType instanceof TypeCheckerAny) && !explicitType.equals(valueType)) {
           this.tryError({
@@ -376,10 +390,10 @@ export class TypeChecker {
       }
 
       case "ParameterizedType": {
-        const type = this.check(node.name, scope);
+        const type = this.check(node.name, scope, context);
         const parameters: TypeCheckerType[] = [];
 
-        for (const param of node.parameters) parameters.push(this.check(param, scope));
+        for (const param of node.parameters) parameters.push(this.check(param, scope, context));
 
         const res = type.addGenericParameters(parameters);
 
@@ -399,36 +413,43 @@ export class TypeChecker {
       }
 
       case "ExpressionStatement": {
-        return this.check(node.expression, scope);
+        return this.check(node.expression, scope, context);
       }
 
       case "TypeCast": {
-        this.check(node.expression, scope);
-        return this.check(node.type, scope);
+        this.check(node.expression, scope, context);
+        return this.check(node.type, scope, context);
       }
 
       case "CallExpression": {
-        const fn = this.check(node.expression, scope);
+        const fn = this.check(node.expression, scope, context);
         this.expectType(fn, TypeCheckerCallable, "expected a callable expression", node.expression.span);
 
-        const res = fn.canCall(node, (node) => this.check(node, scope));
+        const implicitVariable =
+          fn.signature.params.length > 0 &&
+          fn.signature.params[0].type instanceof TypeCheckerReference &&
+          context !== null &&
+          (context.kind === "VariableAssignment" || context.kind === "VariableDefinition");
+
+        const res = fn.canCall(node, (node) => this.check(node, scope, null), implicitVariable);
+        this.metaMap.set(node, { kind: "FunctionCall", implicitVariable });
 
         if (!res.ok) {
           this.tryError({
             type: "Type",
-            message: res.error.error,
-            span: res.error.span,
+            message: res.error,
+            span: res.span,
           });
 
           return new TypeCheckerError();
         }
 
-        return res.signature.return;
+        return fn.signature.return;
       }
 
       case "AssignmentExpression": {
-        const lhs = this.check(node.expression, scope);
-        const rhs = this.check(node.value, scope);
+        const lhs = this.check(node.expression, scope, context);
+        const rhs = this.check(node.value, scope, { kind: "VariableAssignment", node });
 
         if (!lhs.equals(rhs)) {
           this.tryError({
@@ -451,7 +472,7 @@ export class TypeChecker {
 
         const returnType = fnScope.getReturnType();
 
-        if (!returnType.equals(this.check(node.value, scope))) {
+        if (!returnType.equals(this.check(node.value, scope, context))) {
           this.source.error({
             type: "Type",
             message: `cannot return this type of expression`,
@@ -478,26 +499,26 @@ export class TypeChecker {
           return new TypeCheckerError();
         }
 
-        const result = conditionCallable.canCall(node, (node) => this.check(node, scope));
+        const result = conditionCallable.canCall(node, (node) => this.check(node, scope, null));
 
         if (!result.ok) {
           this.tryError({
             type: "Type",
-            message: result.error.error,
-            span: result.error.span,
+            message: result.error,
+            span: result.span,
           });
 
           return new TypeCheckerError();
         }
 
-        this.check(node.block, scope);
+        this.check(node.block, scope, context);
 
         return conditionCallable;
       }
 
       case "BinaryExpression": {
-        const lhs = this.check(node.lhs, scope);
-        const rhs = this.check(node.rhs, scope);
+        const lhs = this.check(node.lhs, scope, context);
+        const rhs = this.check(node.rhs, scope, context);
 
         const result = lhs.execOperator(node.operator.value as BinaryOperators, rhs);
 
@@ -516,38 +537,35 @@ export class TypeChecker {
 
       case "IfExpressionStatement": {
         if (!node.expression) return new TypeCheckerError();
-        this.check(node.expression, scope);
+        this.check(node.expression, scope, context);
         if (!node.block) return new TypeCheckerError();
-        this.check(node.block, scope);
+        this.check(node.block, scope, context);
         return new TypeCheckerVoid();
       }
 
       case "FunctionDefinition": {
         const inner = new TypeCheckerFunctionScope(TypeCheckerScopeType.FUNCTION, scope, node.body.span);
-        const returnType = this.check(node.returnType, inner);
-        const parameters: [string, TypeCheckerType][] = [];
+        const returnType = this.check(node.returnType, inner, context);
+        const parameters: TypeCheckerCallableParameter[] = [];
 
         inner.setReturnType(returnType);
 
         for (const param of node.parameters) {
-          const pType = this.check(param.type, inner);
+          const pType = this.check(param.type, inner, context);
 
-          parameters.push([param.name.value, pType]);
+          parameters.push({ name: param.name.value, type: pType, optional: false, variadic: false });
           inner.addSymbol(param.name.value, pType, "@line");
         }
 
-        this.check(node.body, inner);
+        this.check(node.body, inner, context);
 
         this.topScope.addSymbol(
           node.name.value,
-          new TypeCheckerCallable(node.name.value, [
-            {
-              params: parameters,
-              keywordParams: [],
-              variadic: false,
-              return: returnType,
-            },
-          ]),
+          new TypeCheckerCallable(node.name.value, {
+            return: returnType,
+            params: parameters,
+            keywordParams: [],
+          }),
           "@global",
         );
 
@@ -555,16 +573,16 @@ export class TypeChecker {
       }
 
       case "TargetExpression": {
-        return this.check(node.expression, scope);
+        return this.check(node.expression, scope, context);
       }
 
       case "TargetStatement": {
-        this.check(node.statement, scope);
+        this.check(node.statement, scope, context);
         return new TypeCheckerVoid();
       }
 
       case "ForStatement": {
-        const expression = this.check(node.expression, scope);
+        const expression = this.check(node.expression, scope, context);
         let patternTypes: TypeCheckerError[];
 
         if (node.type === "to") {
@@ -615,7 +633,7 @@ export class TypeChecker {
           }
         }
 
-        this.check(node.block, scope);
+        this.check(node.block, scope, context);
 
         return new TypeCheckerVoid();
       }
@@ -630,8 +648,8 @@ export class TypeChecker {
     }
   }
 
-  private check(node: ParserNode, scope: TypeCheckerScope): TypeCheckerType {
-    const type = this.checkNode(node, scope);
+  private check(node: ParserNode, scope: TypeCheckerScope, context: CheckContext): TypeCheckerType {
+    const type = this.checkNode(node, scope, context);
 
     this.scopeMap.set(node, scope);
     this.typeMap.set(node, type);
@@ -644,6 +662,6 @@ export class TypeChecker {
   }
 
   checkProgram() {
-    this.check(this.ast, this.topScope);
+    this.check(this.ast, this.topScope, null);
   }
 }

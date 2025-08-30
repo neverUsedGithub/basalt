@@ -1,4 +1,4 @@
-import type { TypeCheckerCallableSignature } from "../typechecker/types/callable";
+import type { TypeCheckerCallableParameter, TypeCheckerCallableSignature } from "../typechecker/types/callable";
 import { actionDump, type ActionDump, type ActionsItem, type ArgumentsItem } from "../actiondump";
 import {
   TypeCheckerAction,
@@ -49,7 +49,7 @@ interface TypedArgument {
   name: string;
 }
 
-function typeToChecker(type: string): TypeCheckerType {
+function typeToChecker(type?: string): TypeCheckerType {
   if (
     type === "ITEM" ||
     type === "BLOCK" || // TODO: block
@@ -85,84 +85,31 @@ function typeToChecker(type: string): TypeCheckerType {
   throw new Error(`unimplemented actiondump type '${type}'`);
 }
 
-function argToType(item: ArgumentsItem): TypedArgument {
-  const name = (item.description ?? ["argument"]).join(" ").toLowerCase();
-  const type: TypeCheckerType = typeToChecker(item.type ?? "");
+function parseIconArguments(icon: ArgumentsItem[]): TypeCheckerCallableParameter[] {
+  const params: TypeCheckerCallableParameter[] = [];
 
-  return { type, name };
-}
+  for (let i = 0; i < icon.length; i++) {
+    if (!icon[i].type) continue;
 
-function getPermutations<T>(array: (T | T[])[]): T[][] {
-  const stack: [number, number][] = [];
-  const permutations: T[][] = [];
+    let type: TypeCheckerType;
+    let name = (icon[i].description ?? ["unknown"]).join(" ").toLowerCase();
+    let variadic = icon[i].plural ?? false;
+    let optional = icon[i].optional ?? false;
+    let union = [typeToChecker(icon[i].type)];
 
-  let i = 0;
-  let pointer = 0;
-  let currArray: T[] = [];
-
-  perms: while (true) {
-    if (i === array.length) {
-      permutations.push(currArray);
-
-      if (stack.length === 0) break;
-
-      let top = stack[stack.length - 1];
-      top[1]++;
-
-      while (top[1] >= (array[top[0]] as T[]).length) {
-        stack.pop();
-        pointer--;
-
-        if (stack.length === 0) break perms;
-
-        top = stack[stack.length - 1];
-        top[1]++;
-      }
-
-      currArray = currArray.slice(0, top[0]);
-      pointer--;
-      i = top[0];
-    }
-
-    if (Array.isArray(array[i])) {
-      if (stack.length <= pointer) stack.push([i, 0]);
-
-      const [index, offset] = stack[pointer];
-      currArray.push((array[index] as T[])[offset]);
-      pointer++;
-      i++;
-    } else {
-      currArray.push(array[i] as T);
-      i++;
-    }
-  }
-
-  return permutations;
-}
-
-function parseOrArray(args: ArgumentsItem[]) {
-  const array: (TypedArgument | TypedArgument[])[] = [];
-
-  let isVariadic: boolean = false;
-
-  for (let i = 0; i < args.length; i++) {
-    if (!args[i].type) continue;
-
-    // assumes variadic arguments can only have one type
-    if (args[i].plural) isVariadic = true;
-
-    const possible = [argToType(args[i])];
-
-    while (i + 1 < args.length && args[i + 1].text && args[i + 1].text?.includes("OR")) {
+    while (i + 2 < icon.length && icon[i + 1].text?.includes("OR")) {
+      if (icon[i + 2].type === "NONE") optional = true;
+      else union.push(typeToChecker(icon[i + 2].type));
       i += 2;
-      if (args[i].type !== "NONE") possible.push(argToType(args[i]));
     }
 
-    if (possible.length === 1) array.push(possible[0]);
-    else array.push(possible);
+    if (union.length > 1) type = new TypeCheckerUnion(union);
+    else type = union[0];
+
+    params.push({ name: name, type, variadic, optional });
   }
 
-  return { array, isVariadic };
+  return params;
 }
 
 const OPERATOR_ACTIONS = ["=", "!=", "<", "<=", ">", ">="];
@@ -192,9 +139,7 @@ for (const block of actionDump.codeblocks) {
       const actionName = camelToSnakeCase(action.name);
 
       if (action.icon.arguments) {
-        const { array, isVariadic } = parseOrArray(action.icon.arguments!)!;
-        const permutations = getPermutations(array);
-        const signatures: TypeCheckerCallableSignature[] = [];
+        const parameters = parseIconArguments(action.icon.arguments!)!;
         const keywordParams: TypeCheckerCallableSignature["keywordParams"] = [];
 
         for (const tag of action.tags) {
@@ -229,24 +174,17 @@ for (const block of actionDump.codeblocks) {
         const anyRef = new TypeCheckerReference();
         anyRef.addGenericParameters([new TypeCheckerAny()]);
 
-        for (const perm of permutations) {
-          let returnType: TypeCheckerType = new TypeCheckerVoid();
+        let returnType: TypeCheckerType = new TypeCheckerVoid();
 
-          if (perm.length > 0 && perm[0].type instanceof TypeCheckerReference && perm[0].type.equals(anyRef)) {
-            returnType = (perm.shift()!.type as TypeCheckerReference).unwrap();
-          }
-
-          signatures.push({
-            params: perm.map(({ name, type }, i) => [name, type]),
-            return: returnType,
-            keywordParams,
-            variadic: isVariadic,
-          });
-        }
+        const signature: TypeCheckerCallableSignature = {
+          params: parameters,
+          return: returnType,
+          keywordParams,
+        };
 
         namespaceItems.set(
           actionName,
-          new TypeCheckerAction(actionName, signatures, { action: action.name, codeblock: block.identifier }),
+          new TypeCheckerAction(actionName, signature, { action: action.name, codeblock: block.identifier }),
         );
       }
     }

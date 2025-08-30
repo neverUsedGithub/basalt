@@ -9,9 +9,9 @@ export interface TypeCheckerActionOptions {
 export class TypeCheckerAction extends TypeCheckerCallable implements TypeCheckerType {
   constructor(
     name: string,
-    signatures: TypeCheckerCallableSignature[],
+    signature: TypeCheckerCallableSignature,
     public opts: TypeCheckerActionOptions,
   ) {
-    super(name, signatures);
+    super(name, signature);
   }
 }
