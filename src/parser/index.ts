@@ -627,6 +627,7 @@ export class Parser {
       if (this.mode === "strict" || this.is(TokenType.DELIMITER, "(")) {
         this.eat(TokenType.DELIMITER, "(");
         const fnCall = this.pFunctionCall();
+        this.eat(TokenType.DELIMITER, ")");
         
         args = fnCall.args;
         keywordArgs = fnCall.keywordArgs;
