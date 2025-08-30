@@ -16,7 +16,7 @@ fn death_message(): void {
   }
 
   all_players {
-    let @line test = gamee
+    let @line test = game_values;
 
     player_action::send_message(
       @line emoji, @line player_name, @line message, @line emoji,

@@ -94,8 +94,8 @@ export class Parser {
     });
   }
 
-  private tryEat(type: TokenType, value?: string) {
-    if (this.mode === "strict" || this.is(type, value)) {
+  private eatStatementEnd(type: TokenType, value?: string) {
+    if (this.mode === "strict" || this.is(type, value) || !this.is(TokenType.NEWLINE)) {
       this.eat(type, value);
     } else {
       this.addEatError(type, value);
@@ -537,7 +537,7 @@ export class Parser {
       value = this.pExpression();
     }
 
-    this.tryEat(TokenType.SEMICOLON);
+    this.eatStatementEnd(TokenType.SEMICOLON);
 
     return this.make({
       kind: "VariableDefinition",
@@ -717,7 +717,7 @@ export class Parser {
     if (this.is(TokenType.DELIMITER, "{")) return this.pBlock();
 
     const expr = this.pExpression();
-    this.tryEat(TokenType.SEMICOLON);
+    this.eatStatementEnd(TokenType.SEMICOLON);
 
     return this.make({
       kind: "ExpressionStatement",
