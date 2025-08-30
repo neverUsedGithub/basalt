@@ -37,7 +37,7 @@ export class Span {
 
   contains(location: Location): boolean {
     if (location.line === this.start.line) return location.col >= this.start.col;
-    if (location.line === this.end.line) return location.line <= this.end.col;
+    if (location.line === this.end.line) return location.col <= this.end.col;
 
     return location.line > this.start.line && location.line < this.end.line;
   }
