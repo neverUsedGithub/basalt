@@ -19,6 +19,8 @@ event player_event::command {
     @line test['foo'] = set_variable::create_dict() as dict[number];
     @line test['foo']['bar'] += 10;
 
+    @line test["goo"]["boo"] = 10;
+
     player_action::send_message(@line test['foo']['bar'] as text);
 
     # for @line key, @line value in @line test {

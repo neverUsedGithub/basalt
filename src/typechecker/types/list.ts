@@ -17,9 +17,9 @@ export class TypeCheckerList implements TypeCheckerType, TypeCheckerIterable {
   equals(other: TypeCheckerType) {
     return other instanceof TypeCheckerList && this.valueType.equals(other.valueType);
   }
-  
+
   getItem(item: TypeCheckerType): TypeCheckerType | null {
-    return this.valueType;
+    return item instanceof TypeCheckerNumber ? this.valueType : null;
   }
 
   getProperty(name: string): TypeCheckerType | null {
