@@ -10,14 +10,18 @@ export class TypeCheckerVoid implements TypeCheckerType {
     return other instanceof TypeCheckerVoid;
   }
 
-  getSymbol(name: string): TypeCheckerType | null {
+  getItem(item: TypeCheckerType): TypeCheckerType | null {
+    return null;
+  }
+
+  getProperty(name: string): TypeCheckerType | null {
     return null;
   }
 
   addGenericParameters(params: TypeCheckerType[]): { ok: true } | { ok: false; message: string } {
     return { ok: false, message: `${this.asString()} is not generic` };
   }
-  
+
   execOperator(operator: BinaryOperators, rhs: TypeCheckerType): TypeCheckerType | null {
     return null;
   }

@@ -16,15 +16,19 @@ export class TypeCheckerEvent implements TypeCheckerType {
   equals(other: TypeCheckerType): boolean {
     return other instanceof TypeCheckerEvent && other.name === this.name && other.id === this.id;
   }
+  
+  getItem(item: TypeCheckerType): TypeCheckerType | null {
+    return null;
+  }
 
-  getSymbol(name: string): TypeCheckerType | null {
+  getProperty(name: string): TypeCheckerType | null {
     return null;
   }
 
   addGenericParameters(params: TypeCheckerType[]): { ok: true } | { ok: false; message: string } {
     return { ok: false, message: `${this.asString()} is not generic` };
   }
-  
+
   execOperator(operator: BinaryOperators, rhs: TypeCheckerType): TypeCheckerType | null {
     return null;
   }

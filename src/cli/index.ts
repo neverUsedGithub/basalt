@@ -52,14 +52,18 @@ async function cli() {
     const blocks = joinBlockRows(blockRows);
 
     const optimizer = new Optimizer(blocks);
-    const newBlocks = optimizer.optimize();
+    const optimizedBlocks = optimizer.optimize();
 
     if (Bun.argv.includes("-d")) {
       await Bun.write("debug-blocks-unoptimized.json", JSON.stringify(blocks, null, 2));
-      await Bun.write("debug-blocks-optimized.json", JSON.stringify(newBlocks, null, 2));
+      await Bun.write("debug-blocks-optimized.json", JSON.stringify(optimizedBlocks, null, 2));
     }
 
-    rows = splitBlocks(newBlocks);
+    if (Bun.argv.includes("-u")) {
+      rows = splitBlocks(blocks);
+    } else {
+      rows = splitBlocks(optimizedBlocks);
+    }
   } catch (e) {
     if (e instanceof SourceError) {
       console.error(e.message);

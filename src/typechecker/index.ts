@@ -1,5 +1,11 @@
 import type { BinaryOperators } from "../lexer";
-import type { AssignmentExpressionNode, ParserNode, ProgramNode, VariableDefinitionNode } from "../parser/nodes";
+import type {
+  AssignmentExpressionNode,
+  IdentifierNode,
+  ParserNode,
+  ProgramNode,
+  VariableDefinitionNode,
+} from "../parser/nodes";
 import type { ErrorOptions, SourceFile } from "../shared/source";
 import { Span } from "../shared/span";
 import * as std from "../standard";
@@ -218,7 +224,7 @@ export class TypeChecker {
           return new TypeCheckerError();
         }
 
-        const value = namespace.getSymbol(node.name.value);
+        const value = namespace.getProperty(node.name.value);
 
         if (value === null) {
           this.tryError({
@@ -248,7 +254,7 @@ export class TypeChecker {
         if (node.property.kind === "ErrorNode") return new TypeCheckerError();
 
         const propertyName = node.property.kind === "Identifier" ? node.property.name.value : node.property.value.value;
-        const value = namesp.getSymbol(propertyName);
+        const value = namesp.getProperty(propertyName);
 
         if (value === null) {
           this.tryError({
@@ -451,14 +457,28 @@ export class TypeChecker {
         const lhs = this.check(node.expression, scope, context);
         const rhs = this.check(node.value, scope, { kind: "VariableAssignment", node });
 
-        if (!lhs.equals(rhs)) {
-          this.tryError({
-            type: "Type",
-            message: `type '${rhs.asString()}' is not assignable to type '${lhs.asString()}'`,
-            span: node.span,
-          });
+        if (node.operator.value === "=") {
+          if (!lhs.equals(rhs)) {
+            this.tryError({
+              type: "Type",
+              message: `type '${rhs.asString()}' is not assignable to type '${lhs.asString()}'`,
+              span: node.span,
+            });
 
-          return new TypeCheckerError();
+            return new TypeCheckerError();
+          }
+        } else {
+          const operatorResult = lhs.execOperator(node.operator.value.substring(0, 1) as BinaryOperators, rhs);
+
+          if (operatorResult === null) {
+            this.tryError({
+              type: "Type",
+              message: `unsupported operands for '${node.operator.value}': '${lhs.asString()}' and '${rhs.asString()}'`,
+              span: node.span,
+            });
+
+            return new TypeCheckerError();
+          }
         }
 
         return lhs;
@@ -636,6 +656,41 @@ export class TypeChecker {
         this.check(node.block, scope, context);
 
         return new TypeCheckerVoid();
+      }
+
+      case "PropertyAccess": {
+        const object = this.check(node.object, scope, context);
+
+        if (!node.computed) {
+          const property = object.getProperty((node.property as IdentifierNode).name.value);
+
+          if (property === null) {
+            this.tryError({
+              type: "Type",
+              message: `object of type '${object.asString()}' cannot be indexed`,
+              span: node.object.span,
+            });
+
+            return new TypeCheckerError();
+          }
+
+          return property;
+        }
+
+        const property = this.check(node.property, scope, context);
+        const value = object.getItem(property);
+
+        if (value === null) {
+          this.tryError({
+            type: "Type",
+            message: `object of type '${object.asString()}' cannot be indexed with '${property.asString()}'`,
+            span: node.object.span,
+          });
+
+          return new TypeCheckerError();
+        }
+
+        return value;
       }
 
       default: {

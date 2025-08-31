@@ -2,9 +2,11 @@ import type { DFBlock, DFBlockTarget, DFCodeBlock, DFItem, DFParameter, DFTarget
 import type {
   BaseNode,
   ExpressionNode,
+  IdentifierNode,
   KeywordArgumentNode,
   ParserNode,
   ProgramNode,
+  PropertyAccessNode,
   StringNode,
 } from "../parser/nodes";
 import type { OptionsItem } from "../actiondump";
@@ -180,6 +182,10 @@ export class CodeGen {
         };
       }
 
+      case "PropertyAccess": {
+        return this.generatePropertyAccessGet(node, false).value;
+      }
+
       case "CallExpression": {
         const expr = this.checker.getType(node.expression)! as TypeCheckerCallable;
         const args = node.arguments.map((arg) => this.generateItem(arg));
@@ -259,6 +265,81 @@ export class CodeGen {
       type: "TypeError",
       message: `cannot generate an item from this expression (${node.kind})`,
       span: node.span,
+    });
+  }
+
+  private generatePropertyAccessGet(node: PropertyAccessNode, ignoreLast: boolean): { value: DFItem; last: DFItem } {
+    let lhs: DFItem;
+
+    if (node.object.kind === "PropertyAccess") {
+      const next = this.generatePropertyAccessGet(node.object, false);
+      lhs = next.value;
+    } else {
+      lhs = this.generateItem(node.object);
+    }
+
+    const rhs = this.generateItem(node.property);
+
+    if (ignoreLast) {
+      return { value: lhs, last: rhs };
+    }
+
+    const tempVariable: DFVar = {
+      id: "var",
+      data: {
+        name: this.nextTempVariable(),
+        scope: "line",
+      },
+    };
+
+    this.blocks.add({
+      id: "block",
+      block: "set_var",
+      action: "GetDictValue",
+      args: {
+        items: [
+          {
+            item: tempVariable,
+            slot: 0,
+          },
+          {
+            item: lhs,
+            slot: 1,
+          },
+          {
+            item: rhs,
+            slot: 2,
+          },
+        ],
+      },
+    });
+
+    return { value: tempVariable, last: rhs };
+  }
+
+  private generatePropertyAccessSet(node: PropertyAccessNode, value: DFItem) {
+    const result = this.generatePropertyAccessGet(node, true);
+
+    this.blocks.add({
+      id: "block",
+      block: "set_var",
+      action: "SetDictValue",
+      args: {
+        items: [
+          {
+            item: result.value,
+            slot: 0,
+          },
+          {
+            item: result.last,
+            slot: 1,
+          },
+          {
+            item: value,
+            slot: 2,
+          },
+        ],
+      },
     });
   }
 
@@ -492,7 +573,19 @@ export class CodeGen {
       }
 
       case "AssignmentExpression": {
-        const lhs = this.generateItem(node.expression);
+        let lhs: DFItem;
+
+        if (node.expression.kind === "PropertyAccess") {
+          if (node.operator.value === "=") {
+            this.generatePropertyAccessSet(node.expression, this.generateItem(node.value));
+            break;
+          }
+
+          lhs = this.generatePropertyAccessGet(node.expression, false).value;
+        } else {
+          lhs = this.generateItem(node.expression);
+        }
+
         const rhs = this.generateItem(node.value);
         const args: DFItem[] = [lhs];
 
@@ -501,6 +594,11 @@ export class CodeGen {
         if (node.operator.value === "*=" || node.operator.value === "/=") {
           args.push(lhs);
           operator = node.operator.value[0];
+        }
+
+        if (node.operator.value === "%") {
+          args.push(lhs);
+          operator = "Remainder";
         }
 
         args.push(rhs);
@@ -513,6 +611,10 @@ export class CodeGen {
             items: args.map((item, i) => ({ item, slot: i })),
           },
         });
+
+        if (node.expression.kind === "PropertyAccess") {
+          this.generatePropertyAccessSet(node.expression, lhs);
+        }
 
         break;
       }

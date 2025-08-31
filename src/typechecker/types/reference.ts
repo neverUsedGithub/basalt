@@ -17,8 +17,12 @@ export class TypeCheckerReference implements TypeCheckerType {
   equals(other: TypeCheckerType): boolean {
     return other instanceof TypeCheckerReference && this.valueType.equals(other.valueType);
   }
+  
+  getItem(item: TypeCheckerType): TypeCheckerType | null {
+    return null;
+  }
 
-  getSymbol(name: string): TypeCheckerType | null {
+  getProperty(name: string): TypeCheckerType | null {
     return null;
   }
 

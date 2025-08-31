@@ -18,8 +18,12 @@ export class TypeCheckerNamespace implements TypeCheckerType {
   listSymbols(): string[] {
     return Array.from(this.properties.keys());
   }
+  
+  getItem(item: TypeCheckerType): TypeCheckerType | null {
+    return null;
+  }
 
-  getSymbol(name: string): TypeCheckerType | null {
+  getProperty(name: string): TypeCheckerType | null {
     return this.properties.get(name) ?? null;
   }
 

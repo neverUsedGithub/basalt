@@ -20,7 +20,7 @@ export class TrackVariables extends OptimizationPass {
     if (block.block !== "call_func") {
       for (const slot of block.args.items) {
         if (slot.item.id === "var") {
-          let type: "read" | "write" = "read";
+          let type: "read" | "write" | "both" = "read";
 
           const action = actionDump.actions.find(
             (action) => this.actionDumpCodeblocks[action.codeblockName] === block.block && action.name === block.action,
@@ -33,9 +33,19 @@ export class TrackVariables extends OptimizationPass {
             action.icon.arguments[slot.slot].type === "VARIABLE"
           ) {
             type = "write";
+
+            if (action.name === "SetDictValue" || action.name === "SetListValue") {
+              if (slot.slot === 0) {
+                type = "both";
+              }
+            }
           }
 
-          context.markSymbol(type, slot.item, { index, slot: slot.slot });
+          if (type !== "both") context.markSymbol(type, slot.item, { index, slot: slot.slot });
+          else {
+            context.markSymbol("read", slot.item, { index, slot: slot.slot });
+            context.markSymbol("write", slot.item, { index, slot: slot.slot });
+          }
         } else if (slot.item.id === "pn_el") {
           context.markSymbol("write", slot.item, { index, slot: slot.slot });
         }

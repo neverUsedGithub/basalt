@@ -17,8 +17,12 @@ export class TypeCheckerDict implements TypeCheckerType, TypeCheckerIterable {
   equals(other: TypeCheckerType) {
     return other instanceof TypeCheckerDict && this.valueType.equals(other.valueType);
   }
+  
+  getItem(item: TypeCheckerType): TypeCheckerType | null {
+    return this.valueType;
+  }
 
-  getSymbol(name: string): TypeCheckerType | null {
+  getProperty(name: string): TypeCheckerType | null {
     return this.valueType;
   }
 
@@ -28,7 +32,7 @@ export class TypeCheckerDict implements TypeCheckerType, TypeCheckerIterable {
 
     return { ok: true };
   }
-  
+
   execOperator(operator: BinaryOperators, rhs: TypeCheckerType): TypeCheckerType | null {
     if (operator === "==" || operator === "!=") return new TypeCheckerBoolean();
     return null;

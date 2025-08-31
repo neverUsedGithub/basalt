@@ -14,12 +14,16 @@ event player_event::command {
   }
 
   if game command_equals('@test') {
-    let @line test = set_variable::create_dict() as dict[string];
-    set_variable::set_dict_value(ref @line test, 'test', 'foo');
+    let @line test = set_variable::create_dict() as dict[dict[number]];
+    
+    @line test['foo'] = set_variable::create_dict() as dict[number];
+    @line test['foo']['bar'] += 10;
 
-    for @line key, @line value in @line test {
-      player_action::send_message(@line key as text, @line test as text);
-    }
+    player_action::send_message(@line test['foo']['bar'] as text);
+
+    # for @line key, @line value in @line test {
+    #   player_action::send_message(@line key as text, @line test as text);
+    # }
   }
 }
 

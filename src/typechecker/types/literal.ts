@@ -30,8 +30,12 @@ export class TypeCheckerLiteral implements TypeCheckerType {
   equals(other: TypeCheckerType): boolean {
     return other instanceof TypeCheckerLiteral && other.type === this.type && other.value === this.value;
   }
+  
+  getItem(item: TypeCheckerType): TypeCheckerType | null {
+    return null;
+  }
 
-  getSymbol(name: string): TypeCheckerType | null {
+  getProperty(name: string): TypeCheckerType | null {
     return null;
   }
 

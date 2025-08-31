@@ -1,6 +1,7 @@
 import type { BinaryOperators } from "../../lexer";
 import { TypeCheckerBoolean } from "./boolean";
 import type { TypeCheckerIterable } from "./iterable";
+import { TypeCheckerNumber } from "./number";
 import type { TypeCheckerType } from "./type";
 import { TypeCheckerVoid } from "./void";
 
@@ -16,9 +17,14 @@ export class TypeCheckerList implements TypeCheckerType, TypeCheckerIterable {
   equals(other: TypeCheckerType) {
     return other instanceof TypeCheckerList && this.valueType.equals(other.valueType);
   }
-
-  getSymbol(name: string): TypeCheckerType | null {
+  
+  getItem(item: TypeCheckerType): TypeCheckerType | null {
     return this.valueType;
+  }
+
+  getProperty(name: string): TypeCheckerType | null {
+    if (name === "length") return new TypeCheckerNumber();
+    return null;
   }
 
   addGenericParameters(params: TypeCheckerType[]): { ok: true } | { ok: false; message: string } {
@@ -27,7 +33,7 @@ export class TypeCheckerList implements TypeCheckerType, TypeCheckerIterable {
 
     return { ok: true };
   }
-  
+
   execOperator(operator: BinaryOperators, rhs: TypeCheckerType): TypeCheckerType | null {
     if (operator === "==" || operator === "!=") return new TypeCheckerBoolean();
     return null;

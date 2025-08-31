@@ -37,6 +37,7 @@ const OPERATOR_PRECEDENCE = {
   call: 12,
   prop: 11,
   as: 10,
+  "%=": 9,
   "+=": 9,
   "-=": 9,
   "*=": 9,
@@ -386,7 +387,6 @@ export class Parser {
 
       if (this.is(TokenType.DELIMITER, "[")) {
         this.eat(TokenType.DELIMITER, "[");
-        this.eat(TokenType.DELIMITER, "[");
         const key = this.pExpression();
         const end = this.eat(TokenType.DELIMITER, "]");
 
@@ -452,7 +452,7 @@ export class Parser {
         if (rhs.kind !== "Identifier")
           this.error({
             type: "Parser",
-            message: `invalid syntax`,
+            message: `expected an identifier`,
             span: rhs.span,
           });
 

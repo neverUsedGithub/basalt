@@ -12,9 +12,19 @@ export class TypeCheckerUnion implements TypeCheckerType {
   equals(other: TypeCheckerType): boolean {
     return this.types.some((type) => type.equals(other));
   }
+  
+  getItem(item: TypeCheckerType): TypeCheckerType | null {
+    const match = this.types.map((type) => type.getItem(item)).filter(it => it !== null);
+    if (match.length === 0) return null;
+    if (match.length > 1) return new TypeCheckerUnion(match);
+    return match[0];
+  }
 
-  getSymbol(name: string): TypeCheckerType | null {
-    return this.types.find((type) => type.getSymbol(name)) ?? null;
+  getProperty(name: string): TypeCheckerType | null {
+    const match = this.types.map((type) => type.getProperty(name)).filter(it => it !== null);
+    if (match.length === 0) return null;
+    if (match.length > 1) return new TypeCheckerUnion(match);
+    return match[0];
   }
 
   addGenericParameters(params: TypeCheckerType[]): { ok: true } | { ok: false; message: string } {

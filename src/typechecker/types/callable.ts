@@ -58,8 +58,12 @@ export class TypeCheckerCallable implements TypeCheckerType {
   equals(other: TypeCheckerType): boolean {
     return this === other;
   }
+  
+  getItem(item: TypeCheckerType): TypeCheckerType | null {
+    return null;
+  }
 
-  getSymbol(name: string): TypeCheckerType | null {
+  getProperty(name: string): TypeCheckerType | null {
     return null;
   }
 

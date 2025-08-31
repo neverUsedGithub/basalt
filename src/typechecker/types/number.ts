@@ -11,7 +11,11 @@ export class TypeCheckerNumber implements TypeCheckerType {
     return other instanceof TypeCheckerNumber;
   }
 
-  getSymbol(name: string): TypeCheckerType | null {
+  getItem(item: TypeCheckerType): TypeCheckerType | null {
+    return null;
+  }
+
+  getProperty(name: string): TypeCheckerType | null {
     return null;
   }
 
@@ -23,6 +27,8 @@ export class TypeCheckerNumber implements TypeCheckerType {
     if (!(rhs instanceof TypeCheckerNumber)) return null;
     if (operator === "==" || operator === "!=") return new TypeCheckerBoolean();
     if (operator === "<" || operator === ">" || operator === "<=" || operator === ">=") return new TypeCheckerBoolean();
+    if (operator === "+" || operator === "-" || operator === "*" || operator === "/" || operator === "%")
+      return new TypeCheckerNumber();
 
     return null;
   }

@@ -267,6 +267,11 @@ export class Optimizer {
       blocks.push(optimized.head, ...optimized.body);
     }
 
+    for (let i = 0; i < blocks.length; i++) {
+      delete (blocks[i] as any).symbols;
+      delete (blocks[i] as any).unusedSymbols;
+    }
+
     return blocks;
   }
 }

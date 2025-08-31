@@ -111,6 +111,9 @@ const CONSTANT_TOKENS = {
   "-": {
     "=": TokenType.OPERATOR,
   },
+  "%": {
+    "=": TokenType.OPERATOR,
+  },
   "*": {
     "=": TokenType.OPERATOR,
   },
@@ -123,7 +126,7 @@ const CONSTANT_TOKENS = {
   },
 } as const;
 
-export type BinaryOperators = "==" | "!=" | ">" | ">=" | "<" | "<=";
+export type BinaryOperators = "==" | "!=" | ">" | ">=" | "<" | "<=" | "+" | "-" | "*" | "/" | "%";
 
 export class Lexer {
   private pos: number = 0;

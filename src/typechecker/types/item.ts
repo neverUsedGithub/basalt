@@ -19,8 +19,12 @@ export class TypeCheckerItem implements TypeCheckerType {
   equals(other: TypeCheckerType): boolean {
     return other instanceof TypeCheckerItem;
   }
+  
+  getItem(item: TypeCheckerType): TypeCheckerType | null {
+    return null;
+  }
 
-  getSymbol(name: string): TypeCheckerType | null {
+  getProperty(name: string): TypeCheckerType | null {
     return null;
   }
 

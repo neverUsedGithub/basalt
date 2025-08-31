@@ -10,8 +10,12 @@ export class TypeCheckerString implements TypeCheckerType {
   equals(other: TypeCheckerType) {
     return other instanceof TypeCheckerString;
   }
+  
+  getItem(item: TypeCheckerType): TypeCheckerType | null {
+    return null;
+  }
 
-  getSymbol(name: string): TypeCheckerType | null {
+  getProperty(name: string): TypeCheckerType | null {
     return null;
   }
 

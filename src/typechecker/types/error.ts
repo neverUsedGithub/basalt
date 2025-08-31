@@ -10,8 +10,12 @@ export class TypeCheckerError implements TypeCheckerType {
   equals(other: TypeCheckerType): boolean {
     return true;
   }
+  
+  getItem(item: TypeCheckerType): TypeCheckerType | null {
+    return null;
+  }
 
-  getSymbol(name: string): TypeCheckerType | null {
+  getProperty(name: string): TypeCheckerType | null {
     return new TypeCheckerError();
   }
 
