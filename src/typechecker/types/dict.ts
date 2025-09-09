@@ -41,4 +41,8 @@ export class TypeCheckerDict implements TypeCheckerType, TypeCheckerIterable {
   getIteratePattern(): TypeCheckerType[] {
     return [new TypeCheckerString(), this.valueType];
   }
+  
+  isEmpty() {
+    return this.valueType instanceof TypeCheckerVoid;
+  }
 }

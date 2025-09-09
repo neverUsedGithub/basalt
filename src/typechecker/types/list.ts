@@ -42,4 +42,8 @@ export class TypeCheckerList implements TypeCheckerType, TypeCheckerIterable {
   getIteratePattern(): TypeCheckerType[] {
     return [this.valueType];
   }
+
+  isEmpty() {
+    return this.valueType instanceof TypeCheckerVoid;
+  }
 }

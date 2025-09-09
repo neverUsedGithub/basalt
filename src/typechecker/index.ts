@@ -175,6 +175,17 @@ export class TypeChecker {
     }
   }
 
+  private canAssign(left: TypeCheckerType, right: TypeCheckerType): boolean {
+    if (
+      (left instanceof TypeCheckerList && right instanceof TypeCheckerList) ||
+      (left instanceof TypeCheckerDict && right instanceof TypeCheckerDict)
+    ) {
+      return right.isEmpty();
+    }
+
+    return left.equals(right);
+  }
+
   private checkNode(node: ParserNode, scope: TypeCheckerScope, context: CheckContext): TypeCheckerType {
     switch (node.kind) {
       case "ErrorNode": {
@@ -306,10 +317,15 @@ export class TypeChecker {
         const explicitType = node.type ? this.check(node.type, scope, context) : null;
         const valueType = node.value ? this.check(node.value, scope, { kind: "VariableDefinition", node }) : null;
 
-        if (explicitType && valueType && !(valueType instanceof TypeCheckerAny) && !explicitType.equals(valueType)) {
+        if (
+          explicitType &&
+          valueType &&
+          !(valueType instanceof TypeCheckerAny) &&
+          !this.canAssign(explicitType, valueType)
+        ) {
           this.tryError({
             type: "Type",
-            message: `type '${valueType.asString()}' cannot be assigned to a variable with type '${explicitType.asString()}'`,
+            message: `type '${valueType.asString()}' cannot be assigned to type '${explicitType.asString()}'`,
             span: node.value!.span,
           });
 
@@ -459,10 +475,10 @@ export class TypeChecker {
         const rhs = this.check(node.value, scope, { kind: "VariableAssignment", node });
 
         if (node.operator.value === "=") {
-          if (!lhs.equals(rhs)) {
+          if (!this.canAssign(lhs, rhs)) {
             this.tryError({
               type: "Type",
-              message: `type '${rhs.asString()}' is not assignable to type '${lhs.asString()}'`,
+              message: `type '${rhs.asString()}' cannot be assigned to type '${lhs.asString()}'`,
               span: node.span,
             });
 
