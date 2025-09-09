@@ -33,7 +33,28 @@ async function cli() {
   const projectDir = isAbsolute(Bun.argv[2]) ? Bun.argv[2] : join(process.cwd(), Bun.argv[2]);
 
   const compileStart = performance.now();
-  const rows = await compileProject(projectDir, { optimize: true });
+  let result;
+
+  try {
+    result = await compileProject(projectDir, { optimize: true });
+  } catch(e) {
+    logger.fail(`Failed to compile.`);
+
+    if (e instanceof SourceError) {
+      console.log(e.message);
+    } else {
+      throw e;
+    }
+
+    process.exit(1);
+  }
+
+  if (!result.isOk()) {
+    logger.fail(`Failed to compile.`);
+    process.exit(1);
+  }
+
+  const rows = result.unwrap();
 
   if (Bun.argv.includes("-d")) {
     await Bun.write(

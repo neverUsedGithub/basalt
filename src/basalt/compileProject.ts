@@ -8,6 +8,7 @@ import { loadProject } from "../shared/project";
 import { SourceError, SourceFile } from "../shared/source";
 import { TypeChecker } from "../typechecker";
 import { BlockSplitter } from "../splitter";
+import { Err, Ok, type Result } from "../shared/result";
 
 export interface CompileProjectOptions {
   optimize?: boolean;
@@ -17,13 +18,19 @@ const DEFAULT_SETTINGS: CompileProjectOptions = {
   optimize: true,
 };
 
-export async function compileProject(projectDir: string, options_?: CompileProjectOptions): Promise<DFBlockRow[]> {
+export async function compileProject(
+  projectDir: string,
+  options_?: CompileProjectOptions,
+): Promise<Result<DFBlockRow[], string>> {
   const entryName = basename(projectDir);
   const entryPoint = join(projectDir, `${entryName}.basalt`);
 
   const options = Object.assign({}, DEFAULT_SETTINGS, options_);
 
-  const project = await loadProject(projectDir);
+  const result = await loadProject(projectDir);
+  if (!result.isOk()) return Err(result.unwrapErr());
+
+  const project = result.unwrap();
   const source = await SourceFile.from(entryPoint);
 
   let rows: DFBlockRow[];
@@ -50,5 +57,5 @@ export async function compileProject(projectDir: string, options_?: CompileProje
     rows = splitBlocks(splitter.wrapBlocks(optimizedBlocks));
   }
 
-  return rows;
+  return Ok(rows);
 }
