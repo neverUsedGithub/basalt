@@ -52,7 +52,7 @@ const KEYWORDS = [
   "repeat",
   "for",
   "in",
-  "to"
+  "to",
 ];
 const TARGETS = [
   "default",
@@ -121,9 +121,6 @@ const CONSTANT_TOKENS = {
     "=": TokenType.OPERATOR,
   },
   ",": TokenType.COMMA,
-  a: {
-    s: TokenType.OPERATOR,
-  },
 } as const;
 
 export type BinaryOperators = "==" | "!=" | ">" | ">=" | "<" | "<=" | "+" | "-" | "*" | "/" | "%";
@@ -239,6 +236,8 @@ export class Lexer {
           });
 
         type = TokenType.SCOPE;
+      } else if (ident === "as") {
+        type = TokenType.OPERATOR;
       } else if (KEYWORDS.includes(ident)) {
         type = TokenType.KEYWORD;
       } else if (TARGETS.includes(ident as (typeof TARGETS)[number])) {

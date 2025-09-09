@@ -16,10 +16,12 @@ event player_event::command {
   if game command_equals('@test') {
     let @line test = {
       'key': {
-        'other': 123
+        'other': 0
       }
     };
-    
+
+    let @line something = @line test['foo']['other'].asdefbc;
+
     @line test['foo'] = {} as dict[number];
 
     @line test['foo']['bar'] += 10;
