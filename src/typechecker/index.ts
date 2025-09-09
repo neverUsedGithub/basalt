@@ -659,10 +659,10 @@ export class TypeChecker {
         for (let i = 0; i < patternTypes.length; i++) {
           const result = scope.getSymbol(node.pattern[i].name.value, node.pattern[i].scope.value as VariableScope);
 
-          if (result && !result.equals(patternTypes[i])) {
+          if (result && !this.canAssign(result, patternTypes[i])) {
             this.tryError({
               type: "Type",
-              message: `value of type '${patternTypes[i].asString()}' cannot be assigned to a variable of type '${result.asString()}'`,
+              message: `value of type '${patternTypes[i].asString()}' cannot be assigned to type '${result.asString()}'`,
               span: node.pattern[i].span,
             });
           } else if (result === null) {

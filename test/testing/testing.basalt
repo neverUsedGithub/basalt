@@ -33,7 +33,7 @@ event player_event::command {
     player_action::send_message(@line test['foo']['bar'] as text);
 
     for @line key, @line value in @line test {
-      player_action::send_message(@line key as text, @line test as text);
+      player_action::send_message(@line key as text, @line value as text);
     }
   }
 }
