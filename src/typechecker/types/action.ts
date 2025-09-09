@@ -4,6 +4,7 @@ import type { TypeCheckerType } from "./type";
 export interface TypeCheckerActionOptions {
   action: string;
   codeblock: string;
+  docs: string;
 }
 
 export class TypeCheckerAction extends TypeCheckerCallable implements TypeCheckerType {

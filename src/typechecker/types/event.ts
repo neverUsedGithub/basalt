@@ -7,6 +7,7 @@ export class TypeCheckerEvent implements TypeCheckerType {
     public id: string,
     public dfName: string,
     public dfId: string,
+    public docs: string,
   ) {}
 
   asString(): string {

@@ -24,10 +24,6 @@ event player_event::command {
       }
     };
 
-    let @line something = @line test['foo']['other'];
-
-    som
-
     @line test['foo'] = {} as dict[number];
 
     @line test['foo']['bar'] += 10;

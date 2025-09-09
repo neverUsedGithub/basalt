@@ -123,8 +123,9 @@ for (const block of actionDump.codeblocks) {
 
     for (const action of blockActions[blockName]) {
       const actionName = camelToSnakeCase(action.name);
+      const docs = action.icon.description.join(" ");
 
-      namespaceItems.set(actionName, new TypeCheckerEvent(blockName, actionName, block.identifier, action.name));
+      namespaceItems.set(actionName, new TypeCheckerEvent(blockName, actionName, block.identifier, action.name, docs));
     }
 
     builtins[blockName] = new TypeCheckerNamespace(blockName, namespaceItems);
@@ -137,6 +138,7 @@ for (const block of actionDump.codeblocks) {
       if (block.name === "if_var" && OPERATOR_ACTIONS.includes(action.name)) continue;
 
       const actionName = camelToSnakeCase(action.name);
+      const docs = action.icon.description.join(" ");
 
       if (action.icon.arguments) {
         const parameters = parseIconArguments(action.icon.arguments!)!;
@@ -184,7 +186,7 @@ for (const block of actionDump.codeblocks) {
 
         namespaceItems.set(
           actionName,
-          new TypeCheckerAction(actionName, signature, { action: action.name, codeblock: block.identifier }),
+          new TypeCheckerAction(actionName, signature, { action: action.name, codeblock: block.identifier, docs }),
         );
       }
     }
