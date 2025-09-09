@@ -10,6 +10,7 @@ import { SourceError, SourceFile } from "../shared/source";
 import { TypeChecker } from "../typechecker";
 import { CodeClientConnection } from "../codeclient";
 import { BlockSplitter } from "../splitter";
+import { compileProject } from "../basalt/compileProject";
 
 // const dec = await decompressDF(
 //   JSON.parse(
@@ -30,56 +31,19 @@ function codeClientFail() {
 
 async function cli() {
   const projectDir = isAbsolute(Bun.argv[2]) ? Bun.argv[2] : join(process.cwd(), Bun.argv[2]);
-  const entryName = basename(projectDir);
-  const entryPoint = join(projectDir, `${entryName}.basalt`);
 
-  const project = await loadProject(projectDir);
-  const source = await SourceFile.from(entryPoint);
+  const compileStart = performance.now();
+  const rows = await compileProject(projectDir, { optimize: true });
 
-  const compileStart: number = performance.now();
-
-  let rows: DFBlockRow[];
-
-  try {
-    const lexer = new Lexer(source, "strict");
-    const parser = new Parser(source, lexer, "strict", null);
-    const ast = parser.parse();
-
-    const checker = new TypeChecker(source, ast, "strict");
-    checker.checkProgram();
-
-    const codegen = new CodeGen(source, checker, ast);
-    const blockRows = codegen.generateProgram();
-    const blocks = joinBlockRows(blockRows);
-
-    const optimizer = new Optimizer(blocks);
-    const optimizedBlocks = optimizer.optimize();
-
-    const splitter = new BlockSplitter({ plotSize: project.plot.size });
-
-    if (Bun.argv.includes("-u")) {
-      rows = splitBlocks(splitter.wrapBlocks(blocks));
-    } else {
-      rows = splitBlocks(splitter.wrapBlocks(optimizedBlocks));
-    }
-
-    if (Bun.argv.includes("-d")) {
-      await Bun.write(
-        "debug-blocks.json",
-        JSON.stringify(
-          rows.flatMap((row) => row.get()),
-          null,
-          2,
-        ),
-      );
-    }
-  } catch (e) {
-    if (e instanceof SourceError) {
-      console.error(e.message);
-      process.exit(1);
-    } else {
-      throw e;
-    }
+  if (Bun.argv.includes("-d")) {
+    await Bun.write(
+      "debug-blocks.json",
+      JSON.stringify(
+        rows.flatMap((row) => row.get()),
+        null,
+        2,
+      ),
+    );
   }
 
   const compileTime = performance.now() - compileStart;
