@@ -37,7 +37,7 @@ async function cli() {
 
   try {
     result = await compileProject(projectDir, { optimize: true });
-  } catch(e) {
+  } catch (e) {
     logger.fail(`Failed to compile.`);
 
     if (e instanceof SourceError) {
@@ -50,7 +50,7 @@ async function cli() {
   }
 
   if (!result.isOk()) {
-    logger.fail(`Failed to compile.`);
+    logger.fail(`Failed to compile: ${result.unwrapErr()}`);
     process.exit(1);
   }
 
