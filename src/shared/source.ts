@@ -1,3 +1,4 @@
+import { readFile } from "fs/promises";
 import { Location, Span } from "./span";
 
 export interface ErrorOptions {
@@ -66,6 +67,6 @@ export class SourceFile {
   }
 
   static async from(path: string): Promise<SourceFile> {
-    return new SourceFile(path, await Bun.file(path).text());
+    return new SourceFile(path, await readFile(path, { encoding: "utf-8" }));
   }
 }
