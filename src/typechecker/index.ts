@@ -660,6 +660,7 @@ export class TypeChecker {
           const result = scope.getSymbol(node.pattern[i].name.value, node.pattern[i].scope.value as VariableScope);
 
           if (result && !this.canAssign(result, patternTypes[i])) {
+            this.check(node.pattern[i], scope, context);
             this.tryError({
               type: "Type",
               message: `value of type '${patternTypes[i].asString()}' cannot be assigned to type '${result.asString()}'`,
@@ -667,6 +668,9 @@ export class TypeChecker {
             });
           } else if (result === null) {
             scope.addSymbol(node.pattern[i].name.value, patternTypes[i], node.pattern[i].scope.value as VariableScope);
+
+            this.scopeMap.set(node.pattern[i], scope);
+            this.typeMap.set(node.pattern[i], patternTypes[i]);
           }
         }
 
