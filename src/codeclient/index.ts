@@ -1,7 +1,9 @@
 import * as path from "path";
 import EventEmitter from "events";
-import temporaryDirectory from "temp-dir";
 import type { DFBlockRow } from "../shared/blocks";
+import { getTempDir } from "../shared/tempdir";
+import { readFile } from "fs/promises";
+import { writeFile } from "fs/promises";
 
 interface CodeClientEvents {
   auth: [];
@@ -10,7 +12,9 @@ interface CodeClientEvents {
   disconnect: [];
 }
 
-const TEMPORARY_TOKEN_FILE = Bun.file(path.join(temporaryDirectory, ".basalt.token.temp"));
+async function getTemporaryTokenFile(scopes: string[]): Promise<string> {
+  return path.join(await getTempDir(), `.basalt.token.${scopes.join(".")}.temp`);
+}
 
 export type CodeClientScope = "movement" | "write_code" | "read_code" | "clear_plot" | "inventory" | "plot";
 export type CodeClientMode = "play" | "dev" | "build";
@@ -76,11 +80,15 @@ export class CodeClientConnection extends EventEmitter<CodeClientEvents> {
   }
 
   private async getSavedToken(): Promise<string | null> {
-    return await TEMPORARY_TOKEN_FILE.text().catch(() => null);
+    return readFile(await getTemporaryTokenFile(this.scopes), { encoding: "utf-8" }).catch(() => null);
+  }
+
+  private async saveToken(token: string): Promise<void> {
+    await writeFile(await getTemporaryTokenFile(this.scopes), token);
   }
 
   private setSavedToken(token: string): void {
-    this.tokenSavePromise = Bun.write(TEMPORARY_TOKEN_FILE, token);
+    this.tokenSavePromise = this.saveToken(token);
   }
 
   private async onMessage(data: string) {
