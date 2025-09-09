@@ -167,6 +167,19 @@ export interface ForStatementNode extends BaseNode<"ForStatement"> {
   block: BlockNode;
 }
 
+export interface DictionaryItemNode extends BaseNode<"DictionaryItem"> {
+  key: StringNode;
+  value: ExpressionNode;
+}
+
+export interface DictionaryNode extends BaseNode<"Dictionary"> {
+  items: DictionaryItemNode[];
+}
+
+export interface ListNode extends BaseNode<"List"> {
+  items: ExpressionNode[];
+}
+
 export interface ErrorNode extends BaseNode<"ErrorNode"> {}
 
 export type ParserNode =
@@ -208,6 +221,8 @@ export type ExpressionNode =
   | ReferenceExpressionNode
   | TargetExpressionNode
   | TypeCastNode
+  | DictionaryNode
+  | ListNode
   | ErrorNode;
 
 export type TypeNode = TypeNameNode | IdentifierNode | ParameterizedTypeNode;

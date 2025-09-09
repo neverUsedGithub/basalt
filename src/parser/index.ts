@@ -30,6 +30,9 @@ import type {
   ParserNode,
   StyledTextNode,
   ForStatementNode,
+  ListNode,
+  DictionaryNode,
+  DictionaryItemNode,
 } from "./nodes";
 
 const OPERATOR_PRECEDENCE = {
@@ -294,6 +297,55 @@ export class Parser {
     });
   }
 
+  private pList(): ListNode {
+    const start = this.eat(TokenType.DELIMITER, "[").span.start;
+    const items: ExpressionNode[] = [];
+
+    this.skipNewlines();
+    while (!this.is(TokenType.DELIMITER, "]")) {
+      this.skipNewlines();
+      if (items.length > 0) this.eat(TokenType.COMMA);
+      this.skipNewlines();
+
+      items.push(this.pExpression());
+      this.skipNewlines();
+    }
+
+    const end = this.eat(TokenType.DELIMITER, "]").span.end;
+
+    return {
+      kind: "List",
+      items,
+      span: new Span(start, end),
+    };
+  }
+
+  private pDictionary(): DictionaryNode {
+    const start = this.eat(TokenType.DELIMITER, "{").span.start;
+    const items: DictionaryItemNode[] = [];
+
+    this.skipNewlines();
+    while (!this.is(TokenType.DELIMITER, "}")) {
+      this.skipNewlines();
+      if (items.length > 0) this.eat(TokenType.COMMA);
+      this.skipNewlines();
+      const key = this.pString();
+      this.eat(TokenType.COLON, ":");
+      const value = this.pExpression();
+
+      items.push({ kind: "DictionaryItem", key, value, span: new Span(key.span.start, value.span.end) });
+      this.skipNewlines();
+    }
+
+    const end = this.eat(TokenType.DELIMITER, "}").span.end;
+
+    return {
+      kind: "Dictionary",
+      items,
+      span: new Span(start, end),
+    };
+  }
+
   private pAtomic(): ExpressionNode {
     if (this.is(TokenType.KEYWORD, "true") || this.is(TokenType.KEYWORD, "false")) return this.pBoolean();
     if (this.is(TokenType.IDENTIFIER)) return this.pIdentifier();
@@ -303,6 +355,8 @@ export class Parser {
     if (this.is(TokenType.NUMBER)) return this.pNumber();
     if (this.is(TokenType.STRING)) return this.pString();
     if (this.is(TokenType.STYLED_TEXT)) return this.pStyledText();
+    if (this.is(TokenType.DELIMITER, "[")) return this.pList();
+    if (this.is(TokenType.DELIMITER, "{")) return this.pDictionary();
 
     this.error(
       {
@@ -628,7 +682,7 @@ export class Parser {
         this.eat(TokenType.DELIMITER, "(");
         const fnCall = this.pFunctionCall();
         this.eat(TokenType.DELIMITER, ")");
-        
+
         args = fnCall.args;
         keywordArgs = fnCall.keywordArgs;
       } else {
@@ -732,7 +786,7 @@ export class Parser {
       expression,
       pattern,
       block,
-      span: new Span(start, block.span.end)
+      span: new Span(start, block.span.end),
     });
   }
 

@@ -14,12 +14,39 @@ event player_event::command {
   }
 
   if game command_equals('@test') {
-    let @line test = set_variable::create_dict() as dict[dict[number]];
+    let @line test = {
+      'key': {
+        'other': 123
+      }
+    };
     
-    @line test['foo'] = set_variable::create_dict() as dict[number];
-    @line test['foo']['bar'] += 10;
+    @line test['foo'] = {} as dict[number];
 
-    @line test["goo"]["boo"] = 10;
+    @line test['foo']['bar'] += 10;
+    @line test['goo']['boo'] = 2.3;
+    
+    control::wait();
+    control::wait();
+    control::wait();
+    control::wait();
+    control::wait();
+    control::wait();
+    control::wait();
+    control::wait();
+    control::wait();
+    control::wait();
+    control::wait();
+    control::wait();
+    control::wait();
+    control::wait();
+    control::wait();
+    control::wait();
+    control::wait();
+    control::wait();
+    control::wait();
+    control::wait();
+    control::wait();
+    control::wait();
 
     player_action::send_message(@line test['foo']['bar'] as text);
 

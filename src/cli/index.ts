@@ -9,6 +9,7 @@ import { loadProject } from "../shared/project";
 import { SourceError, SourceFile } from "../shared/source";
 import { TypeChecker } from "../typechecker";
 import { CodeClientConnection } from "../codeclient";
+import { BlockSplitter } from "../splitter";
 
 // const dec = await decompressDF(
 //   JSON.parse(
@@ -54,15 +55,23 @@ async function cli() {
     const optimizer = new Optimizer(blocks);
     const optimizedBlocks = optimizer.optimize();
 
-    if (Bun.argv.includes("-d")) {
-      await Bun.write("debug-blocks-unoptimized.json", JSON.stringify(blocks, null, 2));
-      await Bun.write("debug-blocks-optimized.json", JSON.stringify(optimizedBlocks, null, 2));
-    }
+    const splitter = new BlockSplitter({ plotSize: project.plot.size });
 
     if (Bun.argv.includes("-u")) {
-      rows = splitBlocks(blocks);
+      rows = splitBlocks(splitter.wrapBlocks(blocks));
     } else {
-      rows = splitBlocks(optimizedBlocks);
+      rows = splitBlocks(splitter.wrapBlocks(optimizedBlocks));
+    }
+
+    if (Bun.argv.includes("-d")) {
+      await Bun.write(
+        "debug-blocks.json",
+        JSON.stringify(
+          rows.flatMap((row) => row.get()),
+          null,
+          2,
+        ),
+      );
     }
   } catch (e) {
     if (e instanceof SourceError) {

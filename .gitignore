@@ -7,8 +7,7 @@ dist
 *.tgz
 
 # project specific files
-debug-blocks-optimized.json
-debug-blocks-unoptimized.json
+debug-blocks.json
 
 # lock files
 bun.lock

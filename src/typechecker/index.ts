@@ -26,6 +26,7 @@ import {
   TypeCheckerError,
 } from "./types";
 import type { TypeCheckerCallableParameter } from "./types/callable";
+import { TypeCheckerUnion } from "./types/union";
 
 export type VariableScope = "@global" | "@saved" | "@thread" | "@line";
 
@@ -691,6 +692,46 @@ export class TypeChecker {
         }
 
         return value;
+      }
+
+      case "Dictionary": {
+        const dict = new TypeCheckerDict();
+        const valueType: TypeCheckerType[] = [];
+
+        itemLoop: for (const item of node.items) {
+          const type = this.check(item.value, scope, context);
+
+          for (const value of valueType) {
+            if (value.equals(type)) continue itemLoop;
+          }
+
+          valueType.push(type);
+        }
+
+        if (valueType.length === 1) dict.addGenericParameters([valueType[0]]);
+        else if (valueType.length > 1) dict.addGenericParameters([new TypeCheckerUnion(valueType)]);
+
+        return dict;
+      }
+
+      case "List": {
+        const list = new TypeCheckerList();
+        const valueType: TypeCheckerType[] = [];
+
+        itemLoop: for (const item of node.items) {
+          const type = this.check(item, scope, context);
+
+          for (const value of valueType) {
+            if (value.equals(type)) continue itemLoop;
+          }
+
+          valueType.push(type);
+        }
+
+        if (valueType.length === 1) list.addGenericParameters([valueType[0]]);
+        else if (valueType.length > 1) list.addGenericParameters([new TypeCheckerUnion(valueType)]);
+
+        return list;
       }
 
       default: {

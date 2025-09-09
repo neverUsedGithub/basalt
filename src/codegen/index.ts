@@ -259,6 +259,82 @@ export class CodeGen {
 
         return item;
       }
+
+      // TODO: use multiple actions when more than 26 keys
+      case "Dictionary": {
+        const dictVar: DFVar = { data: { name: this.nextTempVariable(), scope: "line" }, id: "var" };
+        const args: DFItem[] = [dictVar];
+
+        if (node.items.length > 0) {
+          const keysVar: DFVar = { data: { name: this.nextTempVariable(), scope: "line" }, id: "var" };
+          const valuesVar: DFVar = { data: { name: this.nextTempVariable(), scope: "line" }, id: "var" };
+
+          const keysItems: DFItem[] = [];
+          const valueItems: DFItem[] = [];
+
+          for (const item of node.items) {
+            keysItems.push({ id: "txt", data: { name: item.key.value.value } });
+            valueItems.push(this.generateItem(item.value));
+          }
+
+          this.blocks.add({
+            id: "block",
+            block: "set_var",
+            action: "CreateList",
+            args: {
+              items: [{ item: keysVar, slot: 0 }, ...keysItems.map((item, slot) => ({ item, slot }))],
+            },
+          });
+
+          this.blocks.add({
+            id: "block",
+            block: "set_var",
+            action: "CreateList",
+            args: {
+              items: [{ item: valuesVar, slot: 0 }, ...valueItems.map((item, slot) => ({ item, slot }))],
+            },
+          });
+
+          args.push(keysVar, valuesVar);
+        }
+
+        this.blocks.add({
+          id: "block",
+          block: "set_var",
+          action: "CreateDict",
+          args: {
+            items: args.map((item, slot) => ({ item, slot })),
+          },
+        });
+
+        return dictVar;
+      }
+
+      // TODO: use multiple actions when more than 26 values
+      case "List": {
+        const tempVar: DFVar = {
+          id: "var",
+          data: {
+            name: this.nextTempVariable(),
+            scope: "line",
+          },
+        };
+
+        const items: DFItem[] = [tempVar];
+
+        items.push(...node.items.map((it) => this.generateItem(it)));
+
+        this.blocks.add({
+          id: "block",
+          block: "set_var",
+          action: "CreateList",
+          args: {
+            items: items.map((item, slot) => ({ item, slot })),
+          },
+        });
+
+        return tempVar;
+      }
     }
 
     this.source.error({

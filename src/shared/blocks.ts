@@ -1,6 +1,8 @@
 import { compressBlocks } from "../diamondfire/df";
 import type { DFBlock, DFBlockTarget, DFTarget } from "../diamondfire/types";
 
+export const BRACKET_BLOCKS = ["if_game", "if_player", "if_entity", "if_variable", "repeat"];
+
 export class DFBlockRow {
   constructor(private blocks: DFBlock[] = []) {}
 
@@ -12,8 +14,33 @@ export class DFBlockRow {
     return compressBlocks(this.blocks);
   }
 
+  measureSize() {
+    return getBlocksSize(this.blocks);
+  }
+
   get() {
     return this.blocks;
+  }
+
+  getVariables(): Record<"line" | "local" | "unsaved" | "saved", Set<string>> {
+    const variables: Record<"line" | "local" | "unsaved" | "saved", Set<string>> = {
+      line: new Set(),
+      local: new Set(),
+      saved: new Set(),
+      unsaved: new Set(),
+    };
+
+    for (const block of this.blocks) {
+      if (block.id !== "block") continue;
+
+      for (const arg of block.args.items) {
+        if (arg.item.id !== "var") continue;
+
+        variables[arg.item.data.scope].add(arg.item.data.name);
+      }
+    }
+
+    return variables;
   }
 }
 
@@ -91,4 +118,19 @@ export function splitBlocks(blocks: DFBlock[]): DFBlockRow[] {
 
 export function joinBlocks(rows: DFBlockRow[]): DFBlock[] {
   return rows.map((row) => row.get()).flat();
+}
+
+export function getBlocksSize(blocks: DFBlock[]): number {
+  let size = 0;
+
+  for (const block of blocks) {
+    if (block.id === "bracket") {
+      size += block.direct === "close" ? 2 : 1;
+      continue;
+    }
+
+    size += BRACKET_BLOCKS.includes(block.block) ? 1 : 2;
+  }
+
+  return size;
 }
