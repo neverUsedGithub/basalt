@@ -32,7 +32,7 @@ export type VariableScope = "@global" | "@saved" | "@thread" | "@line";
 
 enum TypeCheckerScopeType {
   GLOBAL,
-  BLOCK,
+  EVENT,
   FUNCTION,
 }
 
@@ -197,7 +197,9 @@ export class TypeChecker {
           });
 
         if (!node.body) return new TypeCheckerError();
-        this.check(node.body, scope, context);
+
+        const inner = new TypeCheckerFunctionScope(TypeCheckerScopeType.EVENT, scope, node.body.span);
+        this.check(node.body, inner, context);
 
         return new TypeCheckerVoid();
       }
@@ -243,9 +245,7 @@ export class TypeChecker {
       }
 
       case "Block": {
-        const inner = new TypeCheckerScope(TypeCheckerScopeType.BLOCK, scope, node.span);
-        for (const child of node.body) this.check(child, inner, context);
-
+        for (const child of node.body) this.check(child, scope, context);
         return new TypeCheckerVoid();
       }
 
