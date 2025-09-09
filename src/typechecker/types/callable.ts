@@ -52,7 +52,7 @@ export class TypeCheckerCallable implements TypeCheckerType {
       paramStr += `${name}: ${type.asString()} = ...`;
     }
 
-    return `${this.name}(${paramStr})`;
+    return `${this.name}(${paramStr}): ${this.signature.return.asString()}`;
   }
 
   equals(other: TypeCheckerType): boolean {

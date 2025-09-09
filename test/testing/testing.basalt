@@ -1,4 +1,8 @@
 
+fn something(): list[string] {
+  return ['abc', 'def'];
+}
+
 event player_event::command {
   if game command_equals('@greet') {
     let @line sender = game_values::name;
@@ -20,7 +24,9 @@ event player_event::command {
       }
     };
 
-    let @line something = @line test['foo']['other'].asdefbc;
+    let @line something = @line test['foo']['other'];
+
+    som
 
     @line test['foo'] = {} as dict[number];
 
