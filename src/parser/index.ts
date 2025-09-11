@@ -1,6 +1,7 @@
 import { Token, TokenType, type Lexer } from "../lexer";
 import { SourceError, type ErrorOptions, type SourceFile } from "../shared/source";
 import { Location, Span } from "../shared/span";
+import type { VariableScope } from "../typechecker";
 import type {
   BlockNode,
   CallExpressionNode,
@@ -33,6 +34,7 @@ import type {
   ListNode,
   DictionaryNode,
   DictionaryItemNode,
+  BuiltinNode,
 } from "./nodes";
 
 const OPERATOR_PRECEDENCE = {
@@ -177,6 +179,16 @@ export class Parser {
     });
   }
 
+  private pBuiltin(): BuiltinNode {
+    const token = this.eat(TokenType.BUILTIN);
+
+    return this.make({
+      kind: "Builtin",
+      name: token,
+      span: token.span,
+    });
+  }
+
   private pNumber(): NumberNode {
     const token = this.eat(TokenType.NUMBER);
 
@@ -274,13 +286,26 @@ export class Parser {
   }
 
   private pVariable(): VariableNode {
+    if (this.is(TokenType.IDENTIFIER)) {
+      const name = this.eat(TokenType.IDENTIFIER);
+
+      return this.make({
+        kind: "VariableNode",
+        name,
+        scope: "@line",
+        scopeToken: name,
+        span: name.span,
+      });
+    }
+
     const scope = this.eat(TokenType.SCOPE);
     const name = this.is(TokenType.IDENTIFIER) ? this.eat(TokenType.IDENTIFIER) : this.eat(TokenType.STRING);
 
     return this.make({
       kind: "VariableNode",
       name,
-      scope,
+      scopeToken: scope,
+      scope: scope.value as VariableScope,
       span: new Span(scope.span.start, name.span.end),
     });
   }
@@ -348,13 +373,13 @@ export class Parser {
 
   private pAtomic(): ExpressionNode {
     if (this.is(TokenType.KEYWORD, "true") || this.is(TokenType.KEYWORD, "false")) return this.pBoolean();
-    if (this.is(TokenType.IDENTIFIER)) return this.pIdentifier();
+    if (this.is(TokenType.SCOPE) || this.is(TokenType.IDENTIFIER)) return this.pVariable();
     if (this.is(TokenType.KEYWORD, "ref")) return this.pReference();
     if (this.is(TokenType.TARGET)) return this.pTargetExpression();
-    if (this.is(TokenType.SCOPE)) return this.pVariable();
+    if (this.is(TokenType.STYLED_TEXT)) return this.pStyledText();
+    if (this.is(TokenType.BUILTIN)) return this.pBuiltin();
     if (this.is(TokenType.NUMBER)) return this.pNumber();
     if (this.is(TokenType.STRING)) return this.pString();
-    if (this.is(TokenType.STYLED_TEXT)) return this.pStyledText();
     if (this.is(TokenType.DELIMITER, "[")) return this.pList();
     if (this.is(TokenType.DELIMITER, "{")) return this.pDictionary();
 
@@ -458,7 +483,10 @@ export class Parser {
       const operator = this.eat(TokenType.OPERATOR);
       let rhs: ExpressionNode;
 
-      if (operator.value === "::" && (this.is(TokenType.KEYWORD) || this.is(TokenType.TYPENAME))) {
+      if (
+        operator.value === "::" &&
+        (this.is(TokenType.IDENTIFIER) || this.is(TokenType.KEYWORD) || this.is(TokenType.TYPENAME))
+      ) {
         const keyw = this.eat(this.current.type);
 
         rhs = this.make({
@@ -533,7 +561,7 @@ export class Parser {
       }
 
       if (operator.value === "::") {
-        if (lhs.kind !== "Identifier" && lhs.kind !== "NamespaceGetProperty") {
+        if (lhs.kind !== "Identifier" && lhs.kind !== "NamespaceGetProperty" && lhs.kind !== "Builtin") {
           this.error({
             type: "Parser",
             message: `cannot access members of this expression`,

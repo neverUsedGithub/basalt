@@ -1,44 +1,50 @@
 
-fn something(): list[string] {
-  return ['abc', 'def'];
-}
+# event player_event::command {
+#   if game command_equals('@greet') {
+#     let @line sender = game_values::name;
+#     let @line players = game_values::plot_player_uuids as list[string];
 
-event player_event::command {
-  if game command_equals('@greet') {
-    let @line sender = game_values::name;
-    let @line players = game_values::plot_player_uuids as list[string];
+#     for @line uuid in @line players {
+#       selection {
+#         select_object::player_name(@line uuid);
+#         player_action::send_message("Hello from", @line sender);
+#         select_object::reset();
+#       }
+#     }
 
-    for @line uuid in @line players {
-      selection {
-        select_object::player_name(@line uuid);
-        player_action::send_message("Hello from", @line sender);
-        select_object::reset();
-      }
-    }
+#     for @line test to 10 {
+
+#     }
+#   }
+
+#   if game command_equals('@test') {
+#     let @line test = {
+#       'bar': {
+#         'baz': 0
+#       }
+#     };
+
+#     @line test['foo'] = {};
+#     @line test['goo'] = {};
+
+#     @line test['foo']['bar'] += 10;
+#     @line test['goo']['boo'] = 2.3;
+
+#     player_action::send_message(@line test['foo']['bar'] as text);
+
+#     for @line key, @line value in @line test {
+#       player_action::send_message(@line key as text, @line value as text);
+#     }
+#   }
+# }
+
+event player_event::join::test {
+  let amount = 20;
+
+  for test to amount {
+    player_action::send_message("test = {@line test}", test as text, "hi");
   }
 
-  if game command_equals('@test') {
-    let @line test = {
-      'bar': {
-        'baz': 0
-      }
-    };
-
-    @line test['foo'] = {};
-    @line test['goo'] = {};
-
-    @line test['foo']['bar'] += 10;
-    @line test['goo']['boo'] = 2.3;
-
-    player_action::send_message(@line test['foo']['bar'] as text);
-
-    for @line key, @line value in @line test {
-      player_action::send_message(@line key as text, @line value as text);
-    }
-  }
-}
-
-event player_event::join {
   # repeat forever {
   #   while player is_sneaking() {
   #     player_action::action_bar("sneaker");

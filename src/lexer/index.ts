@@ -1,6 +1,7 @@
 import type { VariableScope } from "../typechecker";
 import type { ErrorOptions, SourceFile } from "../shared/source";
 import { Location, Span } from "../shared/span";
+import { builtins } from "../standard";
 
 export enum TokenType {
   EOF = "EOF",
@@ -11,6 +12,7 @@ export enum TokenType {
   STRING = "STRING",
   TARGET = "TARGET",
   KEYWORD = "KEYWORD",
+  BUILTIN = "BUILTIN",
   NEWLINE = "NEWLINE",
   OPERATOR = "OPERATOR",
   TYPENAME = "TYPENAME",
@@ -66,6 +68,8 @@ const TARGETS = [
   "projectile",
   "last_entity",
 ] as const;
+
+const BUILTINS = Object.keys(builtins);
 
 export type TargetTokens = (typeof TARGETS)[number];
 
@@ -240,6 +244,8 @@ export class Lexer {
         type = TokenType.OPERATOR;
       } else if (KEYWORDS.includes(ident)) {
         type = TokenType.KEYWORD;
+      } else if (BUILTINS.includes(ident)) {
+        type = TokenType.BUILTIN;
       } else if (TARGETS.includes(ident as (typeof TARGETS)[number])) {
         type = TokenType.TARGET;
       } else if (TYPENAMES.includes(ident)) {

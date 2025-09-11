@@ -282,12 +282,12 @@ export class TypeChecker {
       }
 
       case "VariableNode": {
-        const data = scope.getSymbol(node.name.value, node.scope.value as VariableScope);
+        const data = scope.getSymbol(node.name.value, node.scope);
 
         if (!data) {
           this.tryError({
             type: "Type",
-            message: `couldn't resolve variable '${node.name.value}' with scope ${node.scope.value}`,
+            message: `couldn't resolve variable '${node.name.value}' with scope ${node.scope}`,
             span: node.span,
           });
 
@@ -298,12 +298,28 @@ export class TypeChecker {
       }
 
       case "Identifier": {
+        const data = scope.getSymbol(node.name.value, "@line");
+
+        if (!data) {
+          this.tryError({
+            type: "Type",
+            message: `couldn't resolve @line variable '${node.name.value}', maybe you forgot a variable scope?`,
+            span: node.name.span,
+          });
+
+          return new TypeCheckerError();
+        }
+
+        return data;
+      }
+
+      case "Builtin": {
         const data = scope.getSymbol(node.name.value, "@global");
 
         if (!data) {
           this.tryError({
             type: "Type",
-            message: `couldn't resolve global variable '${node.name.value}', maybe you forgot a variable scope?`,
+            message: `couldn't resolve builtin variable '${node.name.value}'`,
             span: node.name.span,
           });
 
@@ -340,7 +356,7 @@ export class TypeChecker {
           return new TypeCheckerError();
         }
 
-        scope.addSymbol(node.name.name.value, checkType, node.name.scope.value as VariableScope);
+        scope.addSymbol(node.name.name.value, checkType, node.name.scope);
 
         return new TypeCheckerVoid();
       }
@@ -358,7 +374,7 @@ export class TypeChecker {
       }
 
       case "ReferenceExpression": {
-        const symbol = scope.getSymbol(node.name.name.value, node.name.scope.value as VariableScope);
+        const symbol = scope.getSymbol(node.name.name.value, node.name.scope as VariableScope);
 
         if (symbol === null) {
           this.tryError({
@@ -657,7 +673,7 @@ export class TypeChecker {
         }
 
         for (let i = 0; i < patternTypes.length; i++) {
-          const result = scope.getSymbol(node.pattern[i].name.value, node.pattern[i].scope.value as VariableScope);
+          const result = scope.getSymbol(node.pattern[i].name.value, node.pattern[i].scope as VariableScope);
 
           if (result && !this.canAssign(result, patternTypes[i])) {
             this.check(node.pattern[i], scope, context);
@@ -667,7 +683,7 @@ export class TypeChecker {
               span: node.pattern[i].span,
             });
           } else if (result === null) {
-            scope.addSymbol(node.pattern[i].name.value, patternTypes[i], node.pattern[i].scope.value as VariableScope);
+            scope.addSymbol(node.pattern[i].name.value, patternTypes[i], node.pattern[i].scope as VariableScope);
 
             this.scopeMap.set(node.pattern[i], scope);
             this.typeMap.set(node.pattern[i], patternTypes[i]);

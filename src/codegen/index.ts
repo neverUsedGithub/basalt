@@ -171,14 +171,14 @@ export class CodeGen {
       case "ReferenceExpression": {
         return {
           id: "var",
-          data: { name: node.name.name.value, scope: scope2df[node.name.scope.value as VariableScope] },
+          data: { name: node.name.name.value, scope: scope2df[node.name.scope] },
         };
       }
 
       case "VariableNode": {
         return {
           id: "var",
-          data: { name: node.name.value, scope: scope2df[node.scope.value as VariableScope] },
+          data: { name: node.name.value, scope: scope2df[node.scope] },
         };
       }
 
@@ -580,7 +580,7 @@ export class CodeGen {
       }
 
       case "VariableDefinition": {
-        const variableScope = scope2df[node.name.scope.value as VariableScope];
+        const variableScope = scope2df[node.name.scope];
 
         if (!node.value) break;
 

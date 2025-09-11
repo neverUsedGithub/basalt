@@ -1,5 +1,6 @@
 import type { Token, TokenType } from "../lexer";
 import type { Span } from "../shared/span";
+import type { VariableScope } from "../typechecker";
 
 export interface BaseNode<T> {
   kind: T;
@@ -14,8 +15,13 @@ export interface IdentifierNode extends BaseNode<"Identifier"> {
   name: Token;
 }
 
+export interface BuiltinNode extends BaseNode<"Builtin"> {
+  name: Token;
+}
+
 export interface VariableNode extends BaseNode<"VariableNode"> {
-  scope: Token;
+  scope: VariableScope;
+  scopeToken: Token;
   name: Token;
 }
 
@@ -44,7 +50,7 @@ export interface TypeNameNode extends BaseNode<"TypeName"> {
 }
 
 export interface NamespaceGetPropertyNode extends BaseNode<"NamespaceGetProperty"> {
-  namespace: IdentifierNode | NamespaceGetPropertyNode;
+  namespace: IdentifierNode | BuiltinNode | NamespaceGetPropertyNode;
   property: IdentifierNode | StringNode | ErrorNode;
 }
 
@@ -208,6 +214,7 @@ export type StatementNode =
 export type ExpressionNode =
   | IdentifierNode
   | VariableNode
+  | BuiltinNode
   | SpecialNode
   | NumberNode
   | StringNode
