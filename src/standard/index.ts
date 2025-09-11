@@ -202,6 +202,7 @@ for (const block of actionDump.codeblocks) {
 export interface GameValueItem {
   name: string;
   type: TypeCheckerType;
+  docs: string;
 }
 
 const gameValues: Map<string, GameValueItem> = new Map();
@@ -210,7 +211,7 @@ for (const gameValue of actionDump.gameValues) {
   const snake = camelToSnakeCase(gameValue.icon.name);
   const type = typeToChecker(gameValue.icon.returnType ?? "");
 
-  gameValues.set(snake, { name: gameValue.icon.name, type });
+  gameValues.set(snake, { name: gameValue.icon.name, type, docs: gameValue.icon.description.join(" ") });
 }
 
 builtins["game_values"] = new TypeCheckerGameValues(gameValues);
