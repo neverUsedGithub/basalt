@@ -464,6 +464,10 @@ export class TypeChecker {
         const fn = this.check(node.expression, scope, context);
         this.expectType(fn, TypeCheckerCallable, "expected a callable expression", node.expression.span);
 
+        if (fn instanceof TypeCheckerError) {
+          return fn;
+        }
+
         const implicitVariable =
           fn.signature.params.length > 0 &&
           fn.signature.params[0].type instanceof TypeCheckerReference &&
