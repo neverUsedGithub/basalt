@@ -1,45 +1,41 @@
 
-# event player_event::command {
-#   if game command_equals('@greet') {
-#     let @line sender = game_values::name;
-#     let @line players = game_values::plot_player_uuids as list[string];
+event player_event::command {
+  if game command_equals('@greet') {
+    let sender = game_values::name;
+    let players = game_values::plot_player_uuids as list[string];
 
-#     for @line uuid in @line players {
-#       selection {
-#         select_object::player_name(@line uuid);
-#         player_action::send_message("Hello from", @line sender);
-#         select_object::reset();
-#       }
-#     }
+    for uuid in players {
+      selection {
+        select_object::player_name(uuid);
+        player_action::send_message("Hello from", sender);
+        select_object::reset();
+      }
+    }
+  }
 
-#     for @line test to 10 {
+  if game command_equals('@test') {
+    let test = {
+      'bar': {
+        'baz': 0
+      }
+    };
 
-#     }
-#   }
+    test['foo'] = {};
+    test['goo'] = {};
 
-#   if game command_equals('@test') {
-#     let @line test = {
-#       'bar': {
-#         'baz': 0
-#       }
-#     };
+    test['foo']['bar'] += 10;
+    test['goo']['boo'] = 2.3;
 
-#     @line test['foo'] = {};
-#     @line test['goo'] = {};
+    player_action::send_message(test['foo']['bar'] as text);
 
-#     @line test['foo']['bar'] += 10;
-#     @line test['goo']['boo'] = 2.3;
-
-#     player_action::send_message(@line test['foo']['bar'] as text);
-
-#     for @line key, @line value in @line test {
-#       player_action::send_message(@line key as text, @line value as text);
-#     }
-#   }
-# }
+    for key, value in test {
+      player_action::send_message(key as text, value as text);
+    }
+  }
+}
 
 event player_event::join {
-  let amount = 20;
+  let amount: number = set_variable::random_number(0, 10);
 
   for test to amount {
     player_action::send_message("test = ", test as text, "hi");

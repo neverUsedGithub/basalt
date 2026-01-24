@@ -487,6 +487,14 @@ export class TypeChecker {
           return new TypeCheckerError();
         }
 
+        if (implicitVariable) {
+          const signatureFirst = fn.signature.params[0].type;
+
+          if (signatureFirst instanceof TypeCheckerReference) {
+            return signatureFirst.unwrap();
+          }
+        }
+
         return fn.signature.return;
       }
 
@@ -646,7 +654,7 @@ export class TypeChecker {
           if (!(expression instanceof TypeCheckerNumber)) {
             this.tryError({
               type: "Type",
-              message: `expected a number value`,
+              message: `expected a number value, got ${expression.asString()}`,
               span: node.expression.span,
             });
           }
