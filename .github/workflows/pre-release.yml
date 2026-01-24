@@ -1,0 +1,48 @@
+name: "pre-release"
+
+on:
+  push:
+    branches:
+      - "master"
+
+env:
+  GH_TOKEN: ${{ github.token }}
+
+jobs:
+  pre-release:
+    name: "Pre-Release"
+    runs-on: "ubuntu-latest"
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: 'recursive'
+
+      - name: Download Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build
+        run: bun run build
+
+      - name: Get version identifiers
+        run: |
+          echo "DATE=$(date +'%Y%m%d')" >> $GITHUB_ENV
+          echo "SHA=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+
+      - name: Build executables
+        run: |
+          bun build --outfile basalt-linux-x64 --compile --bundle --target=bun-linux-x64 src/cli/index.ts
+          bun build --outfile basalt-darwin-x64 --compile --bundle --target=bun-darwin-x64 src/cli/index.ts
+          bun build --outfile basalt-darwin-arm64 --compile --bundle --target=bun-darwin-arm64 src/cli/index.ts
+          bun build --outfile basalt-windowx-x64.exe --compile --bundle --target=bun-windows-x64 src/cli/index.ts
+
+      - name: Create release
+        run: |
+          gh release create pre-release-${{ env.DATE }}-${{ env.SHA }} \
+            basalt-linux-x64 basalt-darwin-x64 basalt-darwin-arm64 basalt-windowx-x64.exe \
+            --title "Pre-Release ${{ env.DATE }} (${{ env.SHA }})" \
+            --prerelease \
+            --generate-notes
