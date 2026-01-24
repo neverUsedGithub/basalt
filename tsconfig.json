@@ -6,6 +6,7 @@
     "moduleResolution": "Bundler",
     "lib": ["ESNext"],
     "verbatimModuleSyntax": true,
+    "resolveJsonModule": true,
     "outDir": "build",
     "paths": {
       "@actiondump": ["./actiondump"]

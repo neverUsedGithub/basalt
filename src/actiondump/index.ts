@@ -156,7 +156,5 @@ export interface PurchasablesItem {
     oneTimePurchase?: boolean;
 }
 
-import { join } from "path";
-import { readFileSync } from "fs";
-const rawDump = JSON.parse(readFileSync(join(__dirname, "actiondump.json"), { encoding: "utf-8" }));
-export const actionDump = rawDump as ActionDump;
+import jsonData from "./actiondump.json";
+export const actionDump = jsonData as ActionDump;

@@ -34,12 +34,12 @@ jobs:
           bun build --outfile basalt-linux-x64 --compile --bundle --target=bun-linux-x64 src/cli/index.ts
           bun build --outfile basalt-darwin-x64 --compile --bundle --target=bun-darwin-x64 src/cli/index.ts
           bun build --outfile basalt-darwin-arm64 --compile --bundle --target=bun-darwin-arm64 src/cli/index.ts
-          bun build --outfile basalt-windowx-x64.exe --compile --bundle --target=bun-windows-x64 src/cli/index.ts
+          bun build --outfile basalt-windows-x64.exe --compile --bundle --target=bun-windows-x64 src/cli/index.ts
 
       - name: Create release
         run: |
           gh release create pre-release-${{ env.DATE }}-${{ env.SHA }} \
-            basalt-linux-x64 basalt-darwin-x64 basalt-darwin-arm64 basalt-windowx-x64.exe \
+            basalt-linux-x64 basalt-darwin-x64 basalt-darwin-arm64 basalt-windows-x64.exe \
             --title "Pre-Release ${{ env.DATE }} (${{ env.SHA }})" \
             --prerelease \
             --generate-notes
