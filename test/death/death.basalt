@@ -24,7 +24,7 @@ fn death_message(): void {
 }
 
 event player_event::join {
-  @global death_message();
+  player_action::send_message("Basalt death message example.");
 }
 
 event player_event::death {
