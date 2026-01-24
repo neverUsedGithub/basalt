@@ -24,9 +24,9 @@ fn death_message(): void {
 }
 
 event player_event::join {
-  death_message();
+  @global death_message();
 }
 
 event player_event::death {
-  death_message();
+  @global death_message();
 }
