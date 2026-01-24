@@ -8,12 +8,14 @@ fn txt(value: any): text {
 }
 
 event player_event::join {
+  let join_count_string: text;
+
   @saved join_count += 1;
 
-  let @line join_count_str = txt(@saved join_count);
+  set_variable::styled_text(ref join_count_string, @saved join_count);
 
   player_action::send_message(
-    "Join Count: ", @line join_count_str,
+    "Join Count: ", join_count_string,
 
     alignment_mode='Centered',
     text_value_merging='Add spaces'

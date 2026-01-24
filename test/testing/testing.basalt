@@ -38,11 +38,11 @@
 #   }
 # }
 
-event player_event::join::test {
+event player_event::join {
   let amount = 20;
 
   for test to amount {
-    player_action::send_message("test = {@line test}", test as text, "hi");
+    player_action::send_message("test = ", test as text, "hi");
   }
 
   # repeat forever {
