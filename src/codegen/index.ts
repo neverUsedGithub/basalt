@@ -26,6 +26,7 @@ import {
   TypeCheckerNumber,
   TypeCheckerReference,
   TypeCheckerString,
+  TypeCheckerStyledText,
   TypeCheckerVoid,
   type TypeCheckerType,
 } from "../typechecker/types";
@@ -330,6 +331,81 @@ export class CodeGen {
           action: "CreateList",
           args: {
             items: items.map((item, slot) => ({ item, slot })),
+          },
+        });
+
+        return tempVar;
+      }
+
+      case "BinaryExpression": {
+        const lhsType = this.checker.getType(node.lhs)!;
+        const rhsType = this.checker.getType(node.rhs)!;
+
+        let action: string | null = null;
+
+        if (lhsType instanceof TypeCheckerNumber && rhsType instanceof TypeCheckerNumber) {
+          switch (node.operator.value) {
+            case "+":
+            case "-":
+            case "/": {
+              action = node.operator.value;
+              break;
+            }
+
+            case "*": {
+              action = "x";
+              break;
+            }
+          }
+        }
+
+        if (lhsType instanceof TypeCheckerString && rhsType instanceof TypeCheckerString) {
+          if (node.operator.value === "+") {
+            action = "String";
+          }
+        }
+
+        if (lhsType instanceof TypeCheckerStyledText && rhsType instanceof TypeCheckerStyledText) {
+          if (node.operator.value === "+") {
+            action = "StyledText";
+          }
+        }
+
+        if (!action) {
+          this.source.error({
+            type: "CodeGenError",
+            message: `couldn't decide action for operator '${node.operator.value}'`,
+            span: node.operator.span,
+          });
+        }
+
+        const tempVar: DFVar = {
+          id: "var",
+          data: {
+            name: this.nextTempVariable(),
+            scope: "line",
+          },
+        };
+
+        this.blocks.add({
+          id: "block",
+          block: "set_var",
+          action,
+          args: {
+            items: [
+              {
+                item: tempVar,
+                slot: 0,
+              },
+              {
+                item: this.generateItem(node.lhs),
+                slot: 1,
+              },
+              {
+                item: this.generateItem(node.rhs),
+                slot: 2,
+              },
+            ],
           },
         });
 

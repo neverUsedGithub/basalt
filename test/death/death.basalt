@@ -1,23 +1,23 @@
 fn death_message(): void {
-  let @line player_name = game_values::name;
-  let @line message = "died!";
-  let @line emoji = "💀";
+  let player_name = game_values::name;
+  let message = "died!";
+  let emoji = "💀";
 
-  let @line numbers: dict[number];
-  let @line other: list[list[list[list[number]]]];
+  let numbers: dict[number];
+  let other: list[list[list[list[number]]]];
 
   if player is_sneaking() {
-    @line message = "died while sneaking!";
-    @line emoji = "😬";
+    message = "died while sneaking!";
+    emoji = "😬";
   }
 
-  if (@line numbers) {
+  if (numbers) {
     player_action::send_message("Hello, World!");
   }
 
   all_players {
     player_action::send_message(
-      @line emoji, @line player_name, @line message, @line emoji,
+      emoji, player_name, message, emoji,
       alignment_mode='Centered'
     );
   }

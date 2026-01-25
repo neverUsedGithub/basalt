@@ -110,18 +110,23 @@ const CONSTANT_TOKENS = {
     "=": TokenType.OPERATOR,
   },
   "+": {
+    "": TokenType.OPERATOR,
     "=": TokenType.OPERATOR,
   },
   "-": {
+    "": TokenType.OPERATOR,
     "=": TokenType.OPERATOR,
   },
   "%": {
+    "": TokenType.OPERATOR,
     "=": TokenType.OPERATOR,
   },
   "*": {
+    "": TokenType.OPERATOR,
     "=": TokenType.OPERATOR,
   },
   "/": {
+    "": TokenType.OPERATOR,
     "=": TokenType.OPERATOR,
   },
   ",": TokenType.COMMA,

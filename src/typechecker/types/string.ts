@@ -25,6 +25,7 @@ export class TypeCheckerString implements TypeCheckerType {
 
   execOperator(operator: BinaryOperators, rhs: TypeCheckerType): TypeCheckerType | null {
     if (operator === "==" || operator === "!=") return new TypeCheckerBoolean();
+    if (operator === "+" && rhs instanceof TypeCheckerString) return new TypeCheckerString();
     return null;
   }
 }

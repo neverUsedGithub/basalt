@@ -10,7 +10,7 @@ export class TypeCheckerStyledText implements TypeCheckerType {
   equals(other: TypeCheckerType) {
     return other instanceof TypeCheckerStyledText;
   }
-  
+
   getItem(item: TypeCheckerType): TypeCheckerType | null {
     return null;
   }
@@ -25,6 +25,7 @@ export class TypeCheckerStyledText implements TypeCheckerType {
 
   execOperator(operator: BinaryOperators, rhs: TypeCheckerType): TypeCheckerType | null {
     if (operator === "==" || operator === "!=") return new TypeCheckerBoolean();
+    if (operator === "+" && rhs instanceof TypeCheckerStyledText) return new TypeCheckerStyledText();
     return null;
   }
 }

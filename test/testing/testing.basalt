@@ -24,7 +24,7 @@ event player_event::command {
     test['goo'] = {};
 
     test['foo']['bar'] += 10;
-    test['goo']['boo'] = 2.3;
+    test['goo']['boo'] = set_variable::random_number(0, 10) as number;
 
     player_action::send_message(test['foo']['bar'] as text);
 
@@ -35,7 +35,14 @@ event player_event::command {
 }
 
 event player_event::join {
-  let amount: number = set_variable::random_number(0, 10);
+  let first = set_variable::random_number(0, 10) as number;
+  let second = set_variable::random_number(0, 10) as number;
+
+  let amount = first + second;
+
+  let stitched = "foo" + "bar";
+
+  player_action::send_message("stiched = ", stitched);
 
   for test to amount {
     player_action::send_message("test = ", test as text, "hi");

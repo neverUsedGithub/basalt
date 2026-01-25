@@ -1,18 +1,14 @@
 let @saved join_count = 0;
 
 fn txt(value: any): text {
-  let @line temp: text;
-  set_variable::styled_text(ref @line temp, @line value);
-
-  return @line temp;
+  let temp = set_variable::styled_text(value) as text;
+  return temp;
 }
 
 event player_event::join {
-  let join_count_string: text;
-
   @saved join_count += 1;
-
-  set_variable::styled_text(ref join_count_string, @saved join_count);
+  
+  let join_count_string = set_variable::styled_text(@saved join_count) as text;
 
   player_action::send_message(
     "Join Count: ", join_count_string,
