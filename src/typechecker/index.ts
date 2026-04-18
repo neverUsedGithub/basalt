@@ -180,7 +180,7 @@ export class TypeChecker {
       (left instanceof TypeCheckerList && right instanceof TypeCheckerList) ||
       (left instanceof TypeCheckerDict && right instanceof TypeCheckerDict)
     ) {
-      return right.isEmpty();
+      return left.equals(right) || right.isEmpty();
     }
 
     return left.equals(right);
